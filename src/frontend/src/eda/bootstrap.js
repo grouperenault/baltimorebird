@@ -11,6 +11,7 @@ import { setFileStats, setupFileInfo } from './file-info.js';
 import { deletePlot, updateSignalActiveStates } from './plot-legend.js';
 import { comparedAcquisitionRange } from './runs.js';
 import { changeSource, loadSources, restoreEphemeralSession, updateSourceSelector } from './sessions.js';
+import { toggleShortcutsHelp } from './shortcuts-help.js';
 import { setupSidebarSplitter } from './sidebar.js';
 import { computeFilteredSignals, renderSignalList, renderVirtualList } from './signal-list.js';
 import { setupToolbar } from './toolbar.js';
@@ -56,7 +57,6 @@ export async function init() {
         ectx.currentSource = info.source;
         
         setFileStats({ signals: info.n_signals, duration: info.duration });
-        document.getElementById('app-footer-info').textContent = __APP_VERSION__;
         
         renderSignalList();
         updateSourceSelector();
@@ -229,6 +229,12 @@ function setupEventListeners() {
             if (typeof window.clearCurrentLayout === 'function') window.clearCurrentLayout();
         });
         clearBtn._listenerAdded = true;
+    }
+
+    const shortcutsHelpBtn = document.getElementById('shortcutsHelpBtn');
+    if (shortcutsHelpBtn && !shortcutsHelpBtn._listenerAdded) {
+        shortcutsHelpBtn.addEventListener('click', toggleShortcutsHelp);
+        shortcutsHelpBtn._listenerAdded = true;
     }
 
     // EDA-specific event listeners

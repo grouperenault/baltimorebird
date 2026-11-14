@@ -199,6 +199,7 @@ $ctp-lavender: var(--ctp-lavender);  // HSL: 232°, 97%, 85% - Lavande
 
 // --- Text Colors (du plus visible au plus subtil) ---
 $ctp-title: var(--ctp-title);  // TItre de l'app i.e Baltimorebird
+$brand-heart: #f38ba8;  // Coeur de la signature: fond de nav sombre dans les deux themes
 $ctp-text: var(--ctp-text);  // HSL: 226°, 64%, 88% - Texte principal
 $ctp-subtext1: var(--ctp-subtext1);  // HSL: 227°, 35%, 80% - Sous-titres, labels
 $ctp-subtext0: var(--ctp-subtext0);  // HSL: 228°, 24%, 72% - Texte secondaire
@@ -597,14 +598,17 @@ $sidebar-width-lg: 320px;
 $settings-sidebar-width: 260px;
 
 // --- Toolbar ---
-$toolbar-height: 56px;
+$toolbar-height: 40px;    // Toolbar EDA repliee (depliee: hauteur naturelle, libelles compris)
 $toolbar-height-sm: 48px;
-$tabs-height: 36px;
+$tabs-height: 32px;
 
 // --- Regle de temps de l'EDA (time-ruler.js) ---
 // Axe en haut (RULER_AXIS_HEIGHT), puis une ligne pour les temps des curseurs et le delta.
 $ruler-axis-height: 30px;
 $ruler-cursor-lane: 22px;
+// Ecart vertical entre cartes de la zone des graphes: regle / premier graphe et entre
+// graphes (hauteur des splitters), pour un rythme unique.
+$plot-gap: 4px;
 
 // --- Breakpoints responsive ---
 $breakpoint-xs:  480px;

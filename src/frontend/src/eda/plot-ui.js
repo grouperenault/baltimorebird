@@ -256,12 +256,12 @@ export const Y_AXIS_SIZE = 50;
 
 // Padding interne uPlot [haut, droite, bas, gauche], fixe et identique sur TOUS les
 // panneaux pour que leurs zones de trace aient la meme longueur. Valeurs serrees pour
-// maximiser la zone de trace (u-under): haut, droite et bas reduits a 4px (la graduation
-// du temps est portee par la regle de l'onglet, time-ruler.js). Gauche laisse en auto
-// (gouttiere Y_AXIS_SIZE).
+// maximiser la zone de trace (u-under): haut et bas reduits a 4px (la graduation du temps
+// est portee par la regle de l'onglet, time-ruler.js), droite a 2px contre le splitter de
+// la legende. Gauche laisse en auto (gouttiere Y_AXIS_SIZE).
 export const PLOT_PAD_TOP = 4;
 
-export const PLOT_PAD_RIGHT = 4;
+export const PLOT_PAD_RIGHT = 2;
 
 export const PLOT_PAD_BOTTOM = 4;
 

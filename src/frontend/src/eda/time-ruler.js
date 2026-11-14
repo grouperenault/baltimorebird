@@ -14,13 +14,13 @@
 
 import { S } from '../core/state.js';
 import { ectx } from './context.js';
-import { resetView } from './bootstrap.js';
 import {
-    addCursorFromButton, cursorTimeDecimals, isCursorLockActive, moveCursorTo, placeCursorAt, removeCursor,
+    cursorTimeDecimals, isCursorLockActive, moveCursorTo, placeCursorAt, removeCursor,
     setCursorPair, toggleCursorLock, touchCursor,
 } from './cursors.js';
 import { themeChartColors } from './plot-ui.js';
 import { formatDurationWithMinutes, timeAxisSpace, timeAxisValues } from './time-axis.js';
+import { layoutRulerControls, mountRulerControls, updateRulerControls } from './ruler-controls.js';
 import { applyGlobalViewLocal, panPlotsScaleOnly, recordViewChange } from './view-nav.js';
 
 // Hauteur de l'axe (instance uPlot), en bas de la regle.
@@ -47,11 +47,6 @@ const SVG_ATTRS = 'viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-
     + 'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"';
 const ICON_LOCK = `<svg ${SVG_ATTRS}><path class="ruler-lock-shackle" d="M8 11V7a4 4 0 0 1 8 0v4"/>`
     + '<rect x="5" y="11" width="14" height="10" rx="2"/></svg>';
-const ICON_ADD_CURSOR = `<svg ${SVG_ATTRS}><line x1="9" y1="4" x2="9" y2="20"/><line x1="6" y1="4" x2="12" y2="4"/>`
-    + '<line x1="6" y1="20" x2="12" y2="20"/><line x1="17" y1="9" x2="17" y2="15"/>'
-    + '<line x1="14" y1="12" x2="20" y2="12"/></svg>';
-const ICON_RESET_ZOOM = `<svg ${SVG_ATTRS}><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16" y2="16"/>`
-    + '<path d="M8.5 12.5a3 3 0 1 0 .4-3.4"/><polyline points="8.5 7.5 8.5 9.5 10.5 9.5"/></svg>';
 
 const CURSOR_KEYS = [
     { which: 1, cls: 'ruler-cursor-a', get: () => S.cursor1 },
@@ -115,43 +110,12 @@ export function mountTimeRuler(wrapper) {
     hint.textContent = 'Ctrl + clic pour poser un curseur';
     track.appendChild(hint);
 
-    // Actions qui portent sur l'axe du temps, a sa droite au-dessus de la colonne des
-    // legendes, sur les deux lignes de la regle.
-    const tools = document.createElement('div');
-    tools.className = 'time-ruler-tools';
-    tools.append(
-        toolButton('add-cursor', 'Ajouter un curseur (Ctrl + clic gauche)', ICON_ADD_CURSOR, addCursorFromButton),
-        toolButton('reset-zoom', 'Réinitialiser le zoom (plage complète, bornes Y libérées)', ICON_RESET_ZOOM,
-            resetView),
-    );
-
-    ruler.tools = tools;
-    el.append(track, tools);
+    el.append(track);
     el._ruler = ruler;
     wrapper.prepend(el);
     track.addEventListener('mousedown', e => onTrackMouseDown(ruler, e));
-}
-
-// Bouton d'action de la regle: meme losange que les boutons de la toolbar (.toolbar-btn).
-// L'icone rejoue une courte animation a chaque clic (classe retiree en fin d'animation),
-// seul retour visible d'une action sans etat.
-function toolButton(action, title, icon, onClick) {
-    const btn = document.createElement('button');
-    btn.type = 'button';
-    btn.className = 'toolbar-btn ruler-tool';
-    btn.dataset.action = action;
-    btn.title = title;
-    btn.setAttribute('aria-label', title);
-    btn.innerHTML = `<span class="toolbar-btn-icon">${icon}</span>`;
-    btn.addEventListener('click', () => {
-        onClick();
-        btn.classList.remove('is-fired');
-        // Lecture de layout voulue: sans elle, retirer puis remettre la classe ne relance rien.
-        void btn.offsetWidth;
-        btn.classList.add('is-fired');
-    });
-    btn.addEventListener('animationend', () => btn.classList.remove('is-fired'));
-    return btn;
+    // Commandes de temps, a droite de la graduation (ruler-controls.js).
+    mountRulerControls(ruler);
 }
 
 // Detruit l'instance uPlot de la regle d'un onglet dont le contenu va etre retire ou
@@ -203,6 +167,7 @@ export function rulerSyncPlugin() {
                 if (!ruler) return;
                 syncScale(ruler, u.scales.x);
                 alignTo(ruler, u);
+                updateRulerControls(ruler);
             },
             destroy: () => {
                 if (observer) observer.disconnect();
@@ -241,7 +206,9 @@ function alignTo(ruler, u) {
     // Largeur interieure memorisee ici (chemin de dessin): layoutCursors n'a ainsi aucune
     // lecture de layout a faire pendant le glissement d'un curseur.
     ruler.innerWidth = ruler.el.clientWidth;
-    ruler.toolsWidth = ruler.tools ? ruler.tools.offsetWidth : 0;
+    // Commandes a droite de la piste: toute la largeur restante, sans lecture de layout.
+    ruler.toolsWidth = Math.max(0, ruler.innerWidth - left - width);
+    layoutRulerControls(ruler, ruler.toolsWidth);
     syncScale(ruler, u.scales.x);
     const chartWidth = width + 2 * RULER_SIDE_PAD;
     if (!ruler.chart) createChart(ruler, chartWidth);
@@ -283,6 +250,7 @@ function createChart(ruler, chartWidth) {
 // Repositionne les curseurs de la regle de l'onglet affiche (appele par updateCursors).
 export function updateRulerCursors() {
     const ruler = activeRuler();
+    if (ruler) updateRulerControls(ruler);
     if (ruler && ruler.chart) layoutCursors(ruler);
 }
 

@@ -161,7 +161,6 @@ import { renderFileInfo } from './file-info.js';
         pop.className = 'run-popover';
 
         const duration = run.active ? (document.getElementById('statDuration')?.textContent || '-') : '-';
-        const server = run.active ? (document.getElementById('statServer')?.textContent || '-') : '-';
 
         const sid = run.sessionId || null;
         const comparison = getRuns().length >= 2;
@@ -205,7 +204,6 @@ import { renderFileInfo } from './file-info.js';
             + '</div>'
             + '<div class="run-popover-stats">'
             + `<div class="stat-cell"><div class="stat-cell-label">duree</div><div class="stat-cell-value">${escapeHtml(duration)}</div></div>`
-            + `<div class="stat-cell"><div class="stat-cell-label">serveur</div><div class="stat-cell-value">${escapeHtml(server)}</div></div>`
             + '</div>'
             + offsetBlock
             + (sid ? '<button class="run-delete-btn" type="button">Supprimer le fichier</button>' : '');

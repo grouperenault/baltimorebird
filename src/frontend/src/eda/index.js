@@ -29,4 +29,5 @@ import './computed-vars.js';
 import './analysis.js';
 import './align-runs.js';
 import './deeplink.js';
+import './shortcuts-help.js';
 import './globals.js';

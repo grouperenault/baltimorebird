@@ -13,12 +13,17 @@
    disgracieuse entre onglets et plots, surtout visible en theme clair. */
 .tabs-container {
     display: flex;
-    align-items: center;
-    padding: 0 12px;
+    align-items: stretch;
+    /* Aucun retrait propre: la rangee est dans .plots-area, dont les 8px de cote placent
+       le premier onglet et la derniere action sur les bords du contenu. */
+    padding: 0;
     background: $bg-toolbar;
     gap: 4px;
-    min-height: $tabs-height;
+    height: $tabs-height;
     flex-shrink: 0;
+
+    > .tab-add,
+    > .tabs-actions { align-self: center; }
 }
 
 .tabs-list {
@@ -30,7 +35,11 @@
        onglets (jonction visuelle avec les plots) creait alors une scrollbar verticale
        d'un pixel. */
     overflow-y: hidden;
-    padding: 4px 0 0;
+    /* Onglets sur toute la hauteur de la rangee, sans marge: comme dans un IDE, ils
+       touchent la toolbar au-dessus et le contenu en dessous. */
+    align-self: stretch;
+    align-items: stretch;
+    padding: 0;
     /* Supprimé: flex: 1; pour que le bouton + soit juste après */
 }
 
@@ -47,7 +56,7 @@
     display: flex;
     align-items: center;
     gap: 10px;
-    padding: 7px 12px;
+    padding: 0 12px;
     background: transparent;
     border: 1px solid transparent;
     border-bottom: none;
@@ -174,7 +183,10 @@
     flex-shrink: 0;
 }
 
-/* Les boutons eux-memes sont ceux de la toolbar (.toolbar-btn--inline, _toolbar.scss). */
+/* Les boutons eux-memes sont ceux de la toolbar (.toolbar-btn--inline, _toolbar.scss).
+   Le dernier libelle perd son retrait de fin: la rangee s'arrete sur le bord droit du
+   contenu, comme le premier onglet sur le bord gauche. */
+.tabs-actions > .toolbar-btn--inline:last-child .toolbar-btn-label { padding-right: 0; }
 
 /* Separe les actions sur la vue (capture, partage) de celles sur le layout. */
 .tabs-actions-divider {

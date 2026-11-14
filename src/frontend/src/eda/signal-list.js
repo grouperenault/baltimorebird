@@ -22,10 +22,10 @@ import {
 // (~30k+ noeuds) rend le rendu initial lent et chaque reflow (resize, etc.)
 // tres couteux. On ne monte donc que la fenetre visible (+ marge): un conteneur
 // "sizer" porte la hauteur totale et positionne en absolu les items visibles.
-// Inset horizontal/vertical de la liste: .sidebar-signals fournit deja 14px
-// de padding a la section, 6px suffit ici pour l'aeration propre a la liste
+// Inset horizontal/vertical de la liste: .sidebar-signals fournit deja 8px
+// de padding a la section, 3px suffisent ici pour l'aeration propre a la liste
 // (et le degagement de la scrollbar).
-const SIGNAL_LIST_PAD = 6;
+const SIGNAL_LIST_PAD = 3;
 
 // pas vertical par item (hauteur + espacement). Rangee plate (cf. _signal-list.scss):
 // pas d'espacement entre lignes, le pas egale la hauteur d'un item.

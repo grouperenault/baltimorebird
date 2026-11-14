@@ -28,17 +28,15 @@ export function setupSidebarSplitter() {
 
     const splitter = document.createElement('div');
     splitter.className = 'sidebar-splitter';
-    splitter.style.cssText = 'flex:0 0 5px;cursor:col-resize;'
-        + 'background:rgba(255,255,255,0.04);align-self:stretch;';
     sidebar.insertAdjacentElement('afterend', splitter);
 
     splitter.addEventListener('mousedown', (e) => {
         e.preventDefault();
         const left = sidebar.getBoundingClientRect().left;
         const clamp = (x) => Math.min(left + SIDEBAR_MAX_WIDTH, Math.max(left + SIDEBAR_MIN_WIDTH, x));
-        splitter.style.background = 'rgba(255,255,255,0.15)';
+        splitter.classList.add('is-active');
         beginGhostResize(e.clientX, clamp, (ghostX) => {
-            splitter.style.background = 'rgba(255,255,255,0.04)';
+            splitter.classList.remove('is-active');
             const width = Math.round(ghostX - left);
             sidebar.style.width = width + 'px';
             try {

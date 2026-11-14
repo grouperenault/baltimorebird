@@ -12,7 +12,8 @@
 
 .toolbar {
     min-height: $toolbar-height;
-    padding: 6px 12px 6px 16px;
+    /* Retraits lateraux egaux, ceux de la zone des graphes (.plots-area). */
+    padding: 4px 8px;
     box-sizing: border-box;
     /* $bg-toolbar (mantle) plutot que $bg-darkest (crust): le crust est le
        fond le plus sombre du systeme et faisait de la toolbar la zone la
@@ -63,6 +64,7 @@
 
 .toolbar.is-expanded {
     align-items: stretch;
+    padding-block: 6px;
 
     .toolbar-section-title { display: block; }
     .toolbar-btn { width: 76px; }
@@ -203,9 +205,12 @@ button {
     background: $ctp-surface2;
 }
 
-/* Repli / depli des libelles, pousse au bout de la rangee */
+/* Repli / depli des libelles, pousse au bout de la rangee. Decale vers la droite de la
+   marge interne du chevron (dessine au centre du bouton): le trait visible tombe sur le
+   retrait de 8px de la toolbar, comme la premiere icone a gauche. */
 .toolbar-collapse {
     margin-left: auto;
+    margin-right: -6px;
     align-self: center;
     display: inline-flex;
     align-items: center;
@@ -252,4 +257,27 @@ body.hide-cursor-labels .cursor-label {
        trait ou l'interieur de l'icone. pointer-events: none force tout
        survol du bouton a etre traite de facon uniforme par le bouton lui-meme. */
     pointer-events: none;
+}
+
+/* Toolbar repliee: rangee d'icones compacte, a la maniere des barres d'outils d'IDE. Le
+   gabarit plein (36px) reste celui de la toolbar depliee, ou les libelles s'ajoutent. */
+.toolbar:not(.is-expanded) {
+    .toolbar-btn-icon {
+        width: 30px;
+        height: 30px;
+
+        &::before { inset: 5px; }
+    }
+
+    .toolbar-btn svg {
+        width: 16px;
+        height: 16px;
+    }
+
+    .toolbar-divider { height: 20px; }
+
+    .toolbar-collapse {
+        width: 28px;
+        height: 28px;
+    }
 }

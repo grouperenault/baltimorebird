@@ -79,7 +79,7 @@ $nav-wave-stroke: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/s
 
 .nav-header {
     display: grid;
-    grid-template-columns: auto 1fr auto;
+    grid-template-columns: 1fr auto;
     gap: 15px;
     padding: 16px;
     width: 100%;
@@ -115,7 +115,6 @@ $nav-wave-stroke: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/s
     padding: 16px 0;
 }
 
-.nav-menu.collapsed .logo-text,
 .nav-menu.collapsed .empty-space {
     opacity: 0;
     width: 0;

@@ -127,8 +127,6 @@ export function createPlotInTab(tabId, signalIndex = null, { isBoolPlot = false,
     // lie: il regle la largeur partagee de toutes les legendes.
     const legendSplitter = document.createElement('div');
     legendSplitter.className = 'legend-splitter';
-    legendSplitter.style.cssText = 'flex:0 0 5px;cursor:col-resize;'
-        + 'background:rgba(255,255,255,0.04);align-self:stretch;';
     legendSplitter.addEventListener('mousedown', (e) => startLegendResize(e, plotMain, legendSplitter));
 
     plotMain.appendChild(plotBody);

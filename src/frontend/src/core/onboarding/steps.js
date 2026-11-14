@@ -160,7 +160,7 @@ export const TOUR_STEPS = [
         note: 'Les curseurs peuvent etre synchronises entre onglets depuis la barre d\'outils.',
         targets: [
             {
-                selectors: ['.tab-content.active .ruler-tool[data-action="add-cursor"]', '#addCursorBtn'],
+                selectors: ['.tab-content.active .ruler-controls [data-action="add-cursor"]', '#addCursorBtn'],
                 label: 'Posez un curseur',
                 padding: 6,
                 radius: 8,

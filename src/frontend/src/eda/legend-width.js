@@ -48,9 +48,9 @@ export function startLegendResize(e, plotMain, splitter) {
         mainRight - LEGEND_MIN_WIDTH,
         Math.max(mainRight - LEGEND_MAX_WIDTH, x)
     );
-    splitter.style.background = 'rgba(255,255,255,0.15)';
+    splitter.classList.add('is-active');
     beginGhostResize(e.clientX, clamp, (ghostX) => {
-        splitter.style.background = 'rgba(255,255,255,0.04)';
+        splitter.classList.remove('is-active');
         legendWidth = Math.round(mainRight - ghostX);
         try {
             localStorage.setItem(LEGEND_WIDTH_KEY, String(legendWidth));

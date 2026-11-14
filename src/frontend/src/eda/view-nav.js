@@ -42,6 +42,36 @@ export function redoView() {
     return true;
 }
 
+export function canUndoView() {
+    return ectx.viewHistory.length > 0;
+}
+
+export function canRedoView() {
+    return ectx.redoStack.length > 0;
+}
+
+// Marge de part et d'autre de l'intervalle des curseurs, en fraction de l'ecart: des
+// curseurs cales exactement sur les bords seraient difficiles a saisir.
+const CURSOR_ZOOM_MARGIN = 0.05;
+
+export function canZoomToCursors() {
+    return S.cursor1 !== null && S.cursor2 !== null && S.cursor1 !== S.cursor2;
+}
+
+// Fenetre temporelle sur l'intervalle des deux curseurs. Meme traitement qu'un zoom par
+// selection (plot-ui.js: zoomToSelection): historique, Y recadre hors panneaux verrouilles.
+export function zoomToCursors() {
+    if (!canZoomToCursors()) return false;
+    const lo = Math.min(S.cursor1, S.cursor2);
+    const hi = Math.max(S.cursor1, S.cursor2);
+    const margin = (hi - lo) * CURSOR_ZOOM_MARGIN;
+    S.plots.forEach(p => { if (!p.yLocked) p.yRange = null; });
+    recordViewChange();
+    ectx.globalView = { min: lo - margin, max: hi + margin };
+    refreshAllPlots();
+    return true;
+}
+
 export function refreshAllPlots() {
     S.plots.forEach(plot => fetchAndRenderPlot(plot));
     renderXYPlots();

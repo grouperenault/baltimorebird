@@ -8,7 +8,10 @@
     display: flex;
     flex-direction: column;
     overflow: hidden;
-    padding: 8px;
+    /* Contient aussi la rangee des onglets (.tabs-container): ses 8px de cote sont le
+       retrait commun des onglets et des graphes, la marge haute separe les onglets de la
+       toolbar. */
+    padding: 4px 8px 8px;
 }
 
 .plots-wrapper {
@@ -30,7 +33,7 @@
     z-index: 5;
     flex: none;
     height: $ruler-axis-height + $ruler-cursor-lane;
-    margin-bottom: 4px;
+    margin-bottom: $plot-gap;
     background: $bg-card;
     border: 1px solid $border-color;
     border-radius: 6px;
@@ -39,13 +42,15 @@
 
     // L'ecart sous la regle est rempli du fond de page: les graphes qui defilent
     // passent dessous sans apparaitre entre la regle et le premier graphe visible.
+    // Sous la bordure basse (top: 100% est le bas de la zone de padding, la ou elle est
+    // tracee), sur la seule hauteur de la marge: la recouvrir la rendait invisible.
     &::after {
         content: '';
         position: absolute;
-        top: 100%;
+        top: calc(100% + 1px);
         left: -1px;
         right: -1px;
-        height: 5px;
+        height: $plot-gap;
         background: $bg-body;
     }
 
@@ -93,51 +98,6 @@
 }
 
 .time-ruler.has-cursor .ruler-lane-hint { display: none; }
-
-/* Actions de l'axe du temps (ajouter un curseur, reinitialiser le zoom): a droite de la
-   graduation, au-dessus de la colonne des legendes, sur les deux lignes de la regle. Plus
-   etroit que la colonne des legendes (LEGEND_MIN_WIDTH, legend-width.js): il ne recouvre
-   jamais la piste. Fond plein fondu a gauche: l'etiquette de la derniere graduation, qui
-   deborde de la piste, passe dessous. */
-.time-ruler-tools {
-    position: absolute;
-    top: 0;
-    right: 0;
-    bottom: 0;
-    z-index: 4;
-    display: flex;
-    align-items: center;
-    gap: 2px;
-    padding: 0 6px 0 16px;
-    background: linear-gradient(to right, transparent, $bg-card 12px);
-    border-radius: 0 6px 6px 0;
-    cursor: default;
-}
-
-/* Boutons de la regle: ceux de la toolbar (.toolbar-btn, _toolbar.scss). Seul le fond du
-   losange change: la regle a deja la teinte $bg-card qu'il porte dans la toolbar. */
-.ruler-tool {
-    .toolbar-btn-icon::before { background: $bg-toolbar; }
-
-    // Retour d'une action sans etat, rejoue a chaque clic (time-ruler.js: toolButton).
-    &.is-fired svg { animation: ruler-tool-pop 0.4s cubic-bezier(0.16, 1, 0.3, 1); }
-
-    &[data-action="reset-zoom"].is-fired svg { animation-name: ruler-tool-rewind; }
-}
-
-@keyframes ruler-tool-pop {
-    from { transform: scale(0.7); }
-    to { transform: scale(1); }
-}
-
-@keyframes ruler-tool-rewind {
-    from { transform: rotate(120deg); }
-    to { transform: rotate(0deg); }
-}
-
-@media (prefers-reduced-motion: reduce) {
-    .ruler-tool.is-fired svg { animation: none; }
-}
 
 .plot-container {
     background: $bg-card;
@@ -216,12 +176,62 @@
     font-size: 12px;
 }
 
+/* Splitter graphe / legende, a la maniere des "sash" de VS Code: au repos, le filet d'un
+   pixel qui separe la zone de trace de la liste des signaux (il tient lieu de bordure
+   gauche de la legende). La zone de saisie, de 8px, est centree sur ce filet (::before,
+   4px de chaque cote, au-dessus du graphe et de la legende). Au survol, apres un court
+   delai pour ne pas clignoter au passage du pointeur, une barre d'accent de 3px centree
+   sur le filet le remplace; elle reste affichee pendant le glisser. */
+.legend-splitter {
+    flex: 0 0 1px;
+    align-self: stretch;
+    position: relative;
+    z-index: 1;
+    background: $border-color;
+    cursor: col-resize;
+
+    &::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        left: -4px;
+        width: 9px;
+    }
+
+    &::after {
+        content: "";
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        left: -1px;
+        width: 3px;
+        background: $color-accent;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.1s;
+    }
+
+    &:hover::after {
+        opacity: 1;
+        transition-delay: 0.2s;
+    }
+
+    &.is-active::after {
+        opacity: 1;
+        transition-delay: 0s;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .legend-splitter::after { transition: none; }
+}
+
 .plot-legend {
     width: 150px;
     flex-shrink: 0;
     background: var(--ctp-plot-legend);
-    border-left: 1px solid $border-color;
-    padding: 8px;
+    padding: 8px 8px 8px 6px;
     overflow-y: auto;
     display: flex;
     flex-direction: column;
@@ -433,30 +443,52 @@
 
 /* Splitter */
 .splitter {
-    height: 6px;
-    background: transparent;
+    /* Splitter entre deux panneaux, meme principe que ceux de la sidebar et de la legende:
+       au repos, un simple ecart de 4px entre les cartes, sans poignee. Zone de saisie de
+       10px centree sur cet ecart (::before, 3px sur chaque carte), barre d'accent de 3px
+       centree au survol (apres un court delai) et pendant le glisser. */
+    position: relative;
+    z-index: 2;
+    flex: 0 0 $plot-gap;
     cursor: row-resize;
-    flex-shrink: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: background 0.15s;
+
+    &::before {
+        content: "";
+        position: absolute;
+        left: 0;
+        right: 0;
+        top: -3px;
+        bottom: -3px;
+    }
+
+    &::after {
+        content: "";
+        position: absolute;
+        left: 0;
+        right: 0;
+        top: 50%;
+        height: 3px;
+        border-radius: 2px;
+        background: $color-accent;
+        transform: translateY(-50%);
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.1s;
+    }
+
+    &:hover::after {
+        opacity: 1;
+        transition-delay: 0.2s;
+    }
+
+    &.active::after {
+        opacity: 1;
+        transition-delay: 0s;
+    }
 }
 
-.splitter:hover, .splitter.active {
-    background: rgba(85, 85, 204, 0.2);
-}
-
-.splitter::after {
-    content: '';
-    width: 40px;
-    height: 3px;
-    background: $border-light;
-    border-radius: 2px;
-}
-
-.splitter:hover::after, .splitter.active::after {
-    background: rgba(var(--ctp-overlay0-rgb), 0.5);
+@media (prefers-reduced-motion: reduce) {
+    .splitter::after { transition: none; }
 }
 
 /* Drop zone at bottom */
@@ -514,24 +546,3 @@
     color: $text-muted;
 }
 
-.content-footer {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    justify-content: flex-end;
-    gap: 6px 12px;
-    width: 100%;
-    padding: 4px 14px 4px 14px;
-    border-top: 1px solid $border-color;
-    font-size: $font-size-xs;
-    color: $text-tertiary;
-    background: var(--ctp-mantle);
-}
-
-.content-footer .text {
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-}
-
-.content-footer .text-label { color: $text-secondary; }
