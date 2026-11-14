@@ -58,6 +58,9 @@
         if (viewId === 'dashboard' && typeof initDashboard === 'function') {
             initDashboard();
         }
+
+        // Onglets de la section (Reporting, Live Dashboards), masques hors section.
+        if (typeof window.updateSectionBar === 'function') window.updateSectionBar(viewId);
     };
 
     // Utility open helper

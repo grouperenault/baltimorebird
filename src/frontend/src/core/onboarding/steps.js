@@ -210,7 +210,7 @@ export const TOUR_STEPS = [
         interactive: true,
         paragraphs: [
             'L\'export de l\'onglet produit une image annotee : ajoutez fleches, cadres et texte avant d\'enregistrer, Ctrl+Z annule la derniere annotation.',
-            'La vue Rapports rassemble les analyses generees, pour les relire et les transmettre.',
+            'La section Reporting rassemble les rapports generes, pour les relire et les transmettre, et l\'editeur qui les produit.',
         ],
         link: { label: 'Ouvrir la documentation', href: DOCUMENTATION_URL },
         targets: [
@@ -222,7 +222,7 @@ export const TOUR_STEPS = [
             },
             {
                 selectors: ['.nav-item[data-view="reports"]'],
-                label: 'Vos rapports',
+                label: 'Reporting',
                 padding: 4,
                 radius: 8,
             },

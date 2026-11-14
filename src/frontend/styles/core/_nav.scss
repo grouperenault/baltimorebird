@@ -153,6 +153,34 @@ $nav-wave-stroke: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/s
     overflow-y: auto;
 }
 
+/* Titres de groupe (Analyse, Outils): repere discret entre les entrees. Nav repliee: le
+   titre disparait, un filet court garde la separation. */
+.nav-group-label {
+    padding: 10px 12px 2px;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.6px;
+    text-transform: uppercase;
+    color: $text-muted-variation;
+    white-space: nowrap;
+    overflow: hidden;
+
+    &:first-child { padding-top: 0; }
+
+    // Le libelle porte .nav-label (masquage en nav repliee), dont la taille est celle des
+    // entrees: le titre garde la sienne.
+    .nav-label { font-size: inherit; }
+}
+
+.nav-menu.collapsed .nav-group-label {
+    height: 1px;
+    margin: 8px 12px;
+    padding: 0;
+    background: $border-color;
+
+    &:first-child { display: none; }
+}
+
 .nav-item {
     display: flex;
     align-items: center;

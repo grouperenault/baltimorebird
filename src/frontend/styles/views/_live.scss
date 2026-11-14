@@ -1,0 +1,29 @@
+// Baltimore Bird - Live Dashboards (views/live.html)
+// Catalogue des tableaux de bord de l'equipe data; "Coming soon" pour l'instant.
+@use '../abstracts/variables' as *;
+
+.live-view {
+    display: flex;
+    flex: 1;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    background: $bg-darkest;
+    overflow: auto;
+}
+
+.live-empty {
+    max-width: 440px;
+    text-align: center;
+    color: $text-secondary;
+
+    // Police de la marque (.logo-text, _nav.scss): meme famille, graisse et approche.
+    h2 {
+        margin: 0;
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+        font-size: 28px;
+        font-weight: 800;
+        letter-spacing: -0.04em;
+        color: $text-primary;
+    }
+}

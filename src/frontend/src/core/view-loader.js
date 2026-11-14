@@ -12,6 +12,7 @@ const ViewLoader = (() => {
 
     const viewPaths = Object.freeze({
         eda: '/views/eda.html',
+        live: '/views/live.html',
         dashboard: '/views/dashboard.html',
         reports: '/views/reports.html',
         utilities: '/views/utilities.html',

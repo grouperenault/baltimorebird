@@ -47,6 +47,7 @@
 @use 'views/storage';
 @use 'core/auth';
 @use 'views/reports';
+@use 'views/live';
 @use 'eda/run-list';
 @use 'eda/export-annotate';
 @use 'core/banner';
