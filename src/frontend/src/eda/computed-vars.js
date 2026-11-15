@@ -25,6 +25,30 @@ let editingVariableIndex = null;
 
 // Index de la variable en cours d'édition (null = création)
 
+// Le tiroir est dans le flux (rangee flex): l'ouvrir ou le fermer change la largeur de la
+// zone des graphes. On redimensionne une fois la transition de largeur du tiroir lui-meme
+// terminee. transitionend remonte aussi des enfants (bordure d'un champ qui perd le focus a
+// la fermeture, survol d'un bouton) et finit avant le tiroir: s'y fier mesurait les graphes
+// a mi-course, et ils gardaient cette taille. Delai de secours si la transition ne part pas.
+const DRAWER_TRANSITION_FALLBACK_MS = 400;
+
+function resizePlotsAfterDrawerTransition(drawer) {
+    let done = false;
+    let timer = null;
+    const onEnd = (e) => {
+        if (e.target === drawer && e.propertyName === 'width') finish();
+    };
+    const finish = () => {
+        if (done) return;
+        done = true;
+        clearTimeout(timer);
+        drawer.removeEventListener('transitionend', onEnd);
+        if (typeof window.resizePlotCharts === 'function') window.resizePlotCharts();
+    };
+    drawer.addEventListener('transitionend', onEnd);
+    timer = setTimeout(finish, DRAWER_TRANSITION_FALLBACK_MS);
+}
+
 export function openCreateVariableDrawer() {
     const drawer = document.getElementById('createVariableDrawer');
     if (drawer) {
@@ -33,6 +57,7 @@ export function openCreateVariableDrawer() {
         updateDrawerHeader(false);
         drawer.classList.add('active');
         activateDialog(drawer, { initialFocus: '#newVarName', onEscape: closeCreateVariableDrawer });
+        resizePlotsAfterDrawerTransition(drawer);
     }
 }
 
@@ -48,9 +73,7 @@ export function closeCreateVariableDrawer() {
         drawer.classList.remove('creating');
         editingVariableIndex = null;
         deactivateDialog(drawer);
-        drawer.addEventListener('transitionend', () => {
-            if (typeof window.resizePlotCharts === 'function') window.resizePlotCharts();
-        }, { once: true });
+        resizePlotsAfterDrawerTransition(drawer);
     }
 }
 
@@ -113,6 +136,7 @@ export function openComputedVariableForEdit(signal) {
     renderVariableMappings();
     updateDrawerHeader(true);
     drawer.classList.add('active');
+    resizePlotsAfterDrawerTransition(drawer);
 }
 
 /**
