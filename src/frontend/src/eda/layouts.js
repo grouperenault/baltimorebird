@@ -1,3 +1,4 @@
+import { layoutToLab, parseLab, resolveLabNames } from './lab.js';
 import { layoutToLxf, lxfToLayout } from './lxf.js';
 import { S } from '../core/state.js';
 import { activateDialog, deactivateDialog } from '../core/dialog-a11y.js';
@@ -400,6 +401,115 @@ function downloadLayoutLxf(name) {
     URL.revokeObjectURL(blobUrl);
 }
 
+// Exporte les signaux traces au format .LAB (un nom par ligne), pour l'onglet actif
+// ou pour tout le layout selon le choix du panneau d'export.
+function exportLabFile() {
+    const notify = (msg, type) => {
+        if (typeof showNotification === 'function') showNotification(msg, type);
+    };
+    const scope = document.querySelector('input[name="labScope"]:checked')?.value || 'tab';
+    const layout = window.exportCurrentLayout();
+    let tabIndex = null;
+    let baseName = document.getElementById('saveLayoutName')?.value?.trim() || currentLayout?.name || 'layout';
+    if (scope === 'tab') {
+        tabIndex = S.tabs.findIndex(t => t.id === S.activeTabId);
+        if (tabIndex < 0) {
+            notify('Aucun onglet actif', 'warning');
+            return;
+        }
+        baseName = S.tabs[tabIndex].name || baseName;
+    }
+
+    const { text, count } = layoutToLab(layout, tabIndex);
+    if (!count) {
+        notify(scope === 'tab' ? "Aucun signal tracé dans l'onglet actif" : 'Aucun signal tracé dans le layout', 'warning');
+        return;
+    }
+
+    const blob = new Blob([text], { type: 'text/plain' });
+    const blobUrl = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = blobUrl;
+    link.download = `${sanitizeFileName(baseName)}.lab`;
+    link.click();
+    URL.revokeObjectURL(blobUrl);
+    if (typeof window.bbTrack === 'function') window.bbTrack('lab_export');
+    notify(`Fichier LAB exporté : ${count} signal(aux)`, 'success');
+}
+
+// Ajoute a l'onglet actif les signaux listes dans un fichier .LAB. Un graphe par unite
+// (les booleens et commentaires rejoignent leurs bandes dediees via dropSignalGroup);
+// les signaux deja traces dans l'onglet ne sont pas dupliques.
+async function addLabSignalsToActiveTab(file) {
+    const notify = (msg, type) => {
+        if (typeof showNotification === 'function') showNotification(msg, type);
+    };
+    const signalsInfo = window.getSignalsInfo() || [];
+    if (!signalsInfo.length) {
+        notify("Chargez d'abord un fichier avant d'importer un fichier LAB", 'warning');
+        return;
+    }
+    if (!S.tabs.some(t => t.id === S.activeTabId)) {
+        notify('Aucun onglet actif', 'warning');
+        return;
+    }
+
+    const names = parseLab(await file.text());
+    if (!names.length) {
+        notify('Fichier LAB vide', 'warning');
+        return;
+    }
+    const { indices, missing } = resolveLabNames(names, signalsInfo);
+    const plotted = new Set(S.plots.flatMap(p => p.signals || []));
+    const fresh = indices.filter(idx => !plotted.has(idx));
+    if (!indices.length) {
+        notify(`Aucun des ${names.length} signaux du fichier LAB ne correspond au fichier courant`, 'warning');
+        return;
+    }
+
+    const byUnit = new Map();
+    fresh.forEach(idx => {
+        const unit = S.signalsInfo[idx]?.unit || '';
+        if (!byUnit.has(unit)) byUnit.set(unit, []);
+        byUnit.get(unit).push(idx);
+    });
+    closeLayoutsDrawer();
+    byUnit.forEach(group => window.dropSignalGroup(group));
+
+    if (typeof window.bbTrack === 'function') window.bbTrack('lab_import');
+    const already = indices.length - fresh.length;
+    let msg = `LAB importé : ${fresh.length} signal(aux) ajouté(s)`;
+    if (already) msg += `, ${already} déjà tracé(s)`;
+    if (missing.length) {
+        msg += `, ${missing.length} introuvable(s)`;
+        console.warn('Import LAB: signaux absents du fichier courant', missing);
+    }
+    notify(msg, missing.length ? 'warning' : 'success');
+}
+
+function importLabFromFile() {
+    // Input attache au document: voir importLayoutFromFile.
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.lab,.LAB,text/plain';
+    input.style.display = 'none';
+    document.body.appendChild(input);
+
+    input.addEventListener('change', async () => {
+        const file = input.files && input.files[0];
+        try {
+            if (file) await addLabSignalsToActiveTab(file);
+        } catch (e) {
+            console.error('Import LAB: échec', e);
+            if (typeof showNotification === 'function') showNotification("Erreur lors de l'import du fichier LAB", 'error');
+        } finally {
+            input.remove();
+        }
+    });
+
+    input.click();
+}
+
 // Importe un layout depuis un fichier LXF local et l'applique.
 function importLayoutFromFile() {
     const notify = (msg, type) => {
@@ -592,5 +702,7 @@ window.loadLayoutById = loadLayoutById;
 window.saveCurrentLayout = saveCurrentLayout;
 window.saveLayoutAsNew = saveLayoutAsNew;
 window.importLayoutFromFile = importLayoutFromFile;
+window.exportLabFile = exportLabFile;
+window.importLabFromFile = importLabFromFile;
 window.openSaveLayoutDialog = openSaveLayoutDialog;
 window.closeSaveMode = closeSaveMode;

@@ -284,3 +284,51 @@
     color: $text-light;
 }
 
+
+/* Export .lab (liste des signaux traces) */
+.lab-export {
+    margin-top: 20px;
+    padding-top: 16px;
+    border-top: 1px solid $border-color;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.lab-export-title {
+    font-size: 12px;
+    font-weight: 600;
+    color: $text-primary;
+}
+
+.lab-export-hint {
+    font-size: 12px;
+    color: $text-muted;
+}
+
+.lab-export-scope {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    font-size: 12px;
+    color: $text-light;
+}
+
+.lab-export-scope label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+}
+
+.lab-export .btn-secondary {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.lab-export .btn-secondary svg {
+    width: 16px;
+    height: 16px;
+}

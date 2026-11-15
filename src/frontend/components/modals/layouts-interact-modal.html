@@ -46,6 +46,17 @@
                 Importer un layout MDA
             </button>
             <input type="file" id="importMdaInput" accept=".xdx" style="display:none">
+            <button class="btn-secondary" onclick="importLabFromFile()" title="Ajouter à l'onglet actif les signaux listés dans un fichier LAB (.lab)">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="8" y1="6" x2="21" y2="6"/>
+                    <line x1="8" y1="12" x2="21" y2="12"/>
+                    <line x1="8" y1="18" x2="21" y2="18"/>
+                    <line x1="3" y1="6" x2="3.01" y2="6"/>
+                    <line x1="3" y1="12" x2="3.01" y2="12"/>
+                    <line x1="3" y1="18" x2="3.01" y2="18"/>
+                </svg>
+                Importer des signaux (.lab)
+            </button>
         </div>
     </div>
     
@@ -84,6 +95,23 @@
         <div class="layout-guest-hint" id="layoutGuestHint" style="display: none;">
             Vous n'êtes pas connecté : le layout sera téléchargé sous forme de fichier LXF (.lxf).
             Reconnectez-vous pour le conserver dans votre compte, ou réimportez-le ensuite via « Importer un layout ».
+        </div>
+
+        <div class="lab-export">
+            <div class="lab-export-title">Exporter la liste des signaux (.lab)</div>
+            <div class="lab-export-hint">Fichier texte, un signal tracé par ligne.</div>
+            <div class="lab-export-scope" role="radiogroup" aria-label="Signaux à exporter">
+                <label><input type="radio" name="labScope" value="tab" checked> Onglet actuel</label>
+                <label><input type="radio" name="labScope" value="layout"> Layout complet</label>
+            </div>
+            <button class="btn-secondary" type="button" onclick="exportLabFile()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                    <polyline points="7 10 12 15 17 10"/>
+                    <line x1="12" y1="15" x2="12" y2="3"/>
+                </svg>
+                Exporter en .lab
+            </button>
         </div>
     </div>
     
