@@ -399,8 +399,33 @@
     font-family: $font-mono;
 }
 
-/* Editeur de table pour interp1d (interp-table.js) */
+/* Editeurs de table (interp1d) et de cartographie (interp2d), interp-table.js */
 .interp-helper { margin-top: 12px; }
+
+.interp-helper-toggles {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.interp-helper-inputs {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 8px;
+}
+
+.interp-helper-inputs > div {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+/* Une ligne de cartographie ne revient pas a la ligne: elle defile. */
+.interp-helper-grid {
+    min-height: 140px;
+    overflow-x: auto;
+    white-space: pre;
+}
 
 .interp-helper-body {
     display: flex;
@@ -417,7 +442,7 @@
 
 .interp-helper-label {
     font-size: 11px;
-    color: $text-muted;
+    color: $text-tertiary;
 }
 
 .interp-helper-input,

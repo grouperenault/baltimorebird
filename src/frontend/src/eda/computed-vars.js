@@ -6,7 +6,10 @@ import { activateDialog, deactivateDialog } from '../core/dialog-a11y.js';
 import { API, ectx } from './context.js';
 import { invalidateSignalCaches } from './data-views.js';
 import { setFileStats } from './file-info.js';
-import { findInterpCall, formatInterpCall, parseInterpTable, tableToText } from './interp-table.js';
+import {
+    findInterp2dCall, findInterpCall, formatInterp2dCall, formatInterpCall,
+    gridToText, parseInterpGrid, parseInterpTable, tableToText,
+} from './interp-table.js';
 import { fetchAndRenderPlot } from './render.js';
 import { escapeHtml } from './shared-dom.js';
 import { renderSignalList } from './signal-list.js';
@@ -205,6 +208,7 @@ function resetCreateVariableForm() {
     if (descInput) descInput.value = '';
     if (formulaInput) formulaInput.value = '';
     closeInterpHelper();
+    closeInterp2dHelper();
     
     // Reset mappings
     variableMappings = {};
@@ -409,6 +413,7 @@ function toggleInterpHelper() {
         closeInterpHelper();
         return;
     }
+    closeInterp2dHelper();
     el.body.hidden = false;
     el.toggle.setAttribute('aria-expanded', 'true');
     // Une table deja presente dans la formule se rouvre pour etre corrigee.
@@ -433,29 +438,128 @@ function insertInterpCall() {
         return;
     }
     const call = formatInterpCall(input, parsed.x, parsed.y);
-    const formula = el.formula.value;
-    if (loadedInterpCall && formula.includes(loadedInterpCall)) {
-        el.formula.value = formula.replace(loadedInterpCall, () => call);
-    } else {
-        const at = typeof el.formula.selectionStart === 'number' ? el.formula.selectionStart : formula.length;
-        el.formula.value = formula.slice(0, at) + call + formula.slice(el.formula.selectionEnd ?? at);
-    }
-    // Resolveur d'unite et autres ecouteurs de la formule.
-    el.formula.dispatchEvent(new Event('input', { bubbles: true }));
+    writeCallInFormula(el.formula, call, loadedInterpCall);
     closeInterpHelper();
     el.formula.focus();
 }
 
+// Ecrit un appel dans la formule: remplace l'appel charge dans l'editeur s'il y est
+// toujours, sinon l'insere a la position du curseur.
+function writeCallInFormula(formulaEl, call, loadedCall) {
+    const formula = formulaEl.value;
+    if (loadedCall && formula.includes(loadedCall)) {
+        formulaEl.value = formula.replace(loadedCall, () => call);
+    } else {
+        const at = typeof formulaEl.selectionStart === 'number' ? formulaEl.selectionStart : formula.length;
+        formulaEl.value = formula.slice(0, at) + call + formula.slice(formulaEl.selectionEnd ?? at);
+    }
+    // Resolveur d'unite et autres ecouteurs de la formule.
+    formulaEl.dispatchEvent(new Event('input', { bubbles: true }));
+}
+
+// =========================================================================
+// Editeur de cartographie 2D (interp2d)
+// =========================================================================
+let loadedInterp2dCall = null;
+
+function interp2dElements() {
+    return {
+        toggle: document.getElementById('interp2dHelperToggle'),
+        body: document.getElementById('interp2dHelperBody'),
+        inputX: document.getElementById('interp2dInputX'),
+        inputY: document.getElementById('interp2dInputY'),
+        table: document.getElementById('interp2dTable'),
+        status: document.getElementById('interp2dStatus'),
+        formula: document.getElementById('newVarFormula'),
+    };
+}
+
+function closeInterp2dHelper() {
+    const el = interp2dElements();
+    loadedInterp2dCall = null;
+    if (!el.body) return;
+    el.body.hidden = true;
+    if (el.toggle) el.toggle.setAttribute('aria-expanded', 'false');
+    if (el.table) el.table.value = '';
+    if (el.inputX) el.inputX.value = 'A';
+    if (el.inputY) el.inputY.value = 'B';
+    if (el.status) el.status.textContent = '';
+}
+
+function updateInterp2dStatus() {
+    const el = interp2dElements();
+    if (!el.status || !el.table) return;
+    if (!el.table.value.trim()) {
+        el.status.textContent = '';
+        el.status.classList.remove('is-error');
+        return;
+    }
+    const parsed = parseInterpGrid(el.table.value);
+    el.status.classList.toggle('is-error', !!parsed.error);
+    const last = axis => axis[axis.length - 1];
+    el.status.textContent = parsed.error
+        || `${parsed.x.length} × ${parsed.y.length} valeurs, x de ${parsed.x[0]} à ${last(parsed.x)}, `
+            + `y de ${parsed.y[0]} à ${last(parsed.y)}`;
+}
+
+function toggleInterp2dHelper() {
+    const el = interp2dElements();
+    if (!el.body) return;
+    if (!el.body.hidden) {
+        closeInterp2dHelper();
+        return;
+    }
+    closeInterpHelper();
+    el.body.hidden = false;
+    el.toggle.setAttribute('aria-expanded', 'true');
+    // Une cartographie deja presente dans la formule se rouvre pour etre corrigee.
+    const existing = findInterp2dCall(el.formula ? el.formula.value : '');
+    loadedInterp2dCall = existing ? existing.text : null;
+    if (existing) {
+        el.inputX.value = existing.inputX;
+        el.inputY.value = existing.inputY;
+        el.table.value = gridToText(existing.x, existing.y, existing.z);
+    }
+    updateInterp2dStatus();
+    el.table.focus();
+}
+
+function insertInterp2dCall() {
+    const el = interp2dElements();
+    if (!el.formula || !el.table) return;
+    const parsed = parseInterpGrid(el.table.value);
+    const inputX = el.inputX.value.trim();
+    const inputY = el.inputY.value.trim();
+    if (parsed.error || !inputX || !inputY) {
+        el.status.classList.add('is-error');
+        el.status.textContent = parsed.error || 'Indiquez les deux entrées à lire (ex. A et B)';
+        return;
+    }
+    const call = formatInterp2dCall(inputX, inputY, parsed.x, parsed.y, parsed.z);
+    writeCallInFormula(el.formula, call, loadedInterp2dCall);
+    closeInterp2dHelper();
+    el.formula.focus();
+}
+
 // Delegation au document, comme le resolveur d'unite: le drawer est injecte apres initEDA.
+const INTERP_ACTIONS = {
+    interpHelperToggle: () => toggleInterpHelper(),
+    interpInsert: () => insertInterpCall(),
+    interp2dHelperToggle: () => toggleInterp2dHelper(),
+    interp2dInsert: () => insertInterp2dCall(),
+};
+
 document.addEventListener('click', (e) => {
-    const target = e.target && e.target.closest ? e.target.closest('#interpHelperToggle, #interpInsert') : null;
-    if (!target) return;
-    if (target.id === 'interpHelperToggle') toggleInterpHelper();
-    else insertInterpCall();
+    const target = e.target && e.target.closest
+        ? e.target.closest('#interpHelperToggle, #interpInsert, #interp2dHelperToggle, #interp2dInsert')
+        : null;
+    if (target) INTERP_ACTIONS[target.id]();
 });
 
 document.addEventListener('input', (e) => {
-    if (e.target && e.target.id === 'interpTable') updateInterpStatus();
+    const id = e.target && e.target.id;
+    if (id === 'interpTable') updateInterpStatus();
+    else if (id === 'interp2dTable') updateInterp2dStatus();
 });
 
 export function addMappingSlot() {

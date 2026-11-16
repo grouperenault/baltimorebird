@@ -19,11 +19,14 @@ logger = logging.getLogger(__name__)
 
 computed_vars_bp = Blueprint("computed_vars", __name__)
 
-# Une table d'interpolation s'ecrit dans la formule meme: interp1d(A, [x0, x1], [y0, y1]).
-# Elle voyage donc partout ou va la formule (layout exporte, descripteur de session, LXF)
-# sans champ supplementaire a persister.
-FORMULA_MAX_LENGTH = 4000
+# Une table d'interpolation s'ecrit dans la formule meme: interp1d(A, [x0, x1], [y0, y1]),
+# ou interp2d(A, B, [x...], [y...], [[z...], ...]) pour une cartographie. Elle voyage donc
+# partout ou va la formule (layout exporte, descripteur de session, LXF) sans champ
+# supplementaire a persister. La longueur maximale est dimensionnee pour une cartographie
+# de calibration courante (20 x 20 valeurs a six chiffres: environ 3 500 caracteres).
+FORMULA_MAX_LENGTH = 20000
 INTERP_MAX_POINTS = 500
+INTERP2D_MAX_CELLS = 2500
 
 
 class LookupAxis(tuple):
@@ -31,6 +34,14 @@ class LookupAxis(tuple):
 
     Type distinct d'un tableau numpy pour que interp1d refuse tout autre argument, et pour
     qu'une table ne puisse pas etre prise pour le resultat d'une formule.
+    """
+
+
+class LookupGrid(tuple):
+    """Valeurs d'une cartographie: lignes de nombres ecrites en litteral dans la formule.
+
+    Chaque element est un :class:`LookupAxis` (une ligne). Type distinct pour que seul
+    interp2d l'accepte.
     """
 
 
@@ -52,7 +63,7 @@ def interp1d(values: Any, x_points: Any, y_points: Any) -> Any:
     """
     if not isinstance(x_points, LookupAxis) or not isinstance(y_points, LookupAxis):
         raise ValueError("interp1d attend une table: interp1d(A, [x0, x1, ...], [y0, y1, ...])")
-    if isinstance(values, LookupAxis):
+    if isinstance(values, (LookupAxis, LookupGrid)):
         raise ValueError("interp1d attend un signal en premier argument")
     if len(x_points) != len(y_points):
         raise ValueError("interp1d: la table doit avoir autant de x que de y")
@@ -69,8 +80,76 @@ def interp1d(values: Any, x_points: Any, y_points: Any) -> Any:
     return np.interp(np.asarray(values, dtype=np.float64), xp, fp)
 
 
+def _checked_axis(points: Any, label: str) -> np.ndarray:
+    """Axe d'une cartographie: au moins 2 nombres finis strictement croissants."""
+    if not isinstance(points, LookupAxis):
+        raise ValueError("interp2d attend une cartographie: interp2d(A, B, [x...], [y...], [[z...], ...])")
+    if len(points) < 2:
+        raise ValueError(f"interp2d: l'axe {label} doit avoir au moins 2 points")
+    axis = np.asarray(points, dtype=np.float64)
+    if not np.all(np.isfinite(axis)):
+        raise ValueError("interp2d: la cartographie ne doit contenir que des nombres finis")
+    if np.any(np.diff(axis) <= 0):
+        raise ValueError(f"interp2d: les {label} de la cartographie doivent être strictement croissants")
+    return axis
+
+
+def _cell_indices(values: np.ndarray, axis: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
+    """Indice de la maille contenant chaque valeur, et position relative dans la maille.
+
+    Les valeurs hors de l'axe sont ramenees au bord (bords tenus).
+    """
+    clamped = np.clip(values, axis[0], axis[-1])
+    index = np.clip(np.searchsorted(axis, clamped, side="right") - 1, 0, len(axis) - 2)
+    fraction = (clamped - axis[index]) / (axis[index + 1] - axis[index])
+    return index, fraction
+
+
+def interp2d(x_values: Any, y_values: Any, x_points: Any, y_points: Any, z_rows: Any) -> Any:
+    """Interpolation bilineaire de (``x_values``, ``y_values``) dans une cartographie.
+
+    La cartographie a la disposition d'un tableur: ``z_rows[i][j]`` est la valeur en
+    ``(x_points[j], y_points[i])``, une ligne par point de l'axe y. Hors de la plage de
+    l'un des axes, la valeur du bord le plus proche est tenue sur cet axe.
+
+    Args:
+        x_values: Signal (ou nombre) lu sur l'axe x (colonnes).
+        y_values: Signal (ou nombre) lu sur l'axe y (lignes).
+        x_points: Points de l'axe x, strictement croissants.
+        y_points: Points de l'axe y, strictement croissants.
+        z_rows: Une ligne de valeurs par point de l'axe y, chacune longue comme l'axe x.
+
+    Returns:
+        Les valeurs interpolees, de la forme diffusee de ``x_values`` et ``y_values``.
+
+    Raises:
+        ValueError: Si la cartographie est mal formee.
+    """
+    if isinstance(x_values, (LookupAxis, LookupGrid)) or isinstance(y_values, (LookupAxis, LookupGrid)):
+        raise ValueError("interp2d attend deux signaux en premiers arguments")
+    xp = _checked_axis(x_points, "x")
+    yp = _checked_axis(y_points, "y")
+    if not isinstance(z_rows, LookupGrid):
+        raise ValueError("interp2d: les valeurs s'écrivent ligne par ligne: [[z...], [z...], ...]")
+    if len(z_rows) != len(yp):
+        raise ValueError("interp2d: il faut une ligne de valeurs par point de l'axe y")
+    if any(len(row) != len(xp) for row in z_rows):
+        raise ValueError("interp2d: chaque ligne doit avoir autant de valeurs que l'axe x")
+    if len(xp) * len(yp) > INTERP2D_MAX_CELLS:
+        raise ValueError(f"interp2d: cartographie trop grande (max {INTERP2D_MAX_CELLS} valeurs)")
+    zp = np.asarray(z_rows, dtype=np.float64)
+    if not np.all(np.isfinite(zp)):
+        raise ValueError("interp2d: la cartographie ne doit contenir que des nombres finis")
+
+    xs, ys = np.broadcast_arrays(np.asarray(x_values, dtype=np.float64), np.asarray(y_values, dtype=np.float64))
+    ix, tx = _cell_indices(xs, xp)
+    iy, ty = _cell_indices(ys, yp)
+    return (zp[iy, ix] * (1 - tx) * (1 - ty) + zp[iy, ix + 1] * tx * (1 - ty)
+            + zp[iy + 1, ix] * (1 - tx) * ty + zp[iy + 1, ix + 1] * tx * ty)
+
+
 # Fonctions dont les arguments peuvent etre des tables litterales.
-TABLE_FUNCTIONS = frozenset({"interp1d"})
+TABLE_FUNCTIONS = frozenset({"interp1d", "interp2d"})
 
 ALLOWED_FUNCTIONS: Dict[str, Any] = {
     "abs": np.abs, "sqrt": np.sqrt, "cbrt": np.cbrt, "square": np.square,
@@ -87,6 +166,7 @@ ALLOWED_FUNCTIONS: Dict[str, Any] = {
     "logical_not": np.logical_not, "logical_xor": np.logical_xor,
     "where": np.where,
     "interp1d": interp1d,
+    "interp2d": interp2d,
 }
 
 FORBIDDEN_PATTERNS: List[str] = [
@@ -281,11 +361,23 @@ class SafeExpressionEvaluator:
         if isinstance(node, ast.Call):
             return self._eval_call(node, namespace)
         if isinstance(node, (ast.List, ast.Tuple)):
-            raise UnsafeExpressionError("Une table n'est admise que comme argument de interp1d")
+            raise UnsafeExpressionError("Une table n'est admise que comme argument de interp1d ou interp2d")
         raise UnsafeExpressionError(f"Expression non autorisee: {type(node).__name__}")
 
-    def _eval_table(self, node: ast.expr, namespace: Dict[str, Any]) -> LookupAxis:
-        """Evalue un litteral de table: une liste de nombres, rien d'autre."""
+    def _eval_table(self, node: ast.expr, namespace: Dict[str, Any]) -> Any:
+        """Evalue un litteral de table: une liste de nombres, ou une liste de telles listes.
+
+        Une liste de listes (lignes d'une cartographie) donne un LookupGrid; l'imbrication
+        s'arrete la, une ligne ne contient que des nombres.
+        """
+        if node.elts and all(isinstance(element, (ast.List, ast.Tuple)) for element in node.elts):
+            if sum(len(row.elts) for row in node.elts) > INTERP2D_MAX_CELLS:
+                raise UnsafeExpressionError(f"Cartographie trop grande (max {INTERP2D_MAX_CELLS} valeurs)")
+            return LookupGrid(self._eval_numbers(row, namespace) for row in node.elts)
+        return self._eval_numbers(node, namespace)
+
+    def _eval_numbers(self, node: ast.expr, namespace: Dict[str, Any]) -> LookupAxis:
+        """Evalue une liste de nombres, rien d'autre."""
         if len(node.elts) > INTERP_MAX_POINTS:
             raise UnsafeExpressionError(f"Table trop longue (max {INTERP_MAX_POINTS} points)")
         numbers: List[float] = []

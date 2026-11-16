@@ -138,10 +138,18 @@ Pour modifier une variable calculée existante, effectuer un double-clic sur son
 entrée dans la liste des signaux.
 
 La fonction `interp1d(A, [x0, x1, …], [y0, y1, …])` interpole un signal dans une table
-(cartographie, courbe de calibration) ; hors de la table, la valeur du bord est tenue.
+(courbe de calibration) ; hors de la table, la valeur du bord est tenue.
 « Table d'interpolation… », sous la formule, permet de coller deux colonnes depuis un
 tableur et écrit l'appel dans la formule. La table fait partie de la formule : elle est
 enregistrée et exportée avec la disposition. Elle est limitée à 500 points.
+
+La fonction `interp2d(A, B, [x0, …, xn], [y0, …, ym], [[z…], …, [z…]])` lit une
+cartographie : A sur l'axe x (colonnes), B sur l'axe y (lignes), avec une ligne de valeurs
+par point de l'axe y. L'interpolation est bilinéaire et, sur chaque axe, la valeur du
+bord est tenue hors de la cartographie. « Cartographie 2D… » permet de coller la
+cartographie telle qu'elle apparaît dans un tableur, axe x en première ligne et axe y en
+première colonne (la case de coin peut être vide ou porter un libellé). Elle est limitée
+à 2 500 valeurs, et une formule à 20 000 caractères.
 
 ## Import de dispositions MDA
 

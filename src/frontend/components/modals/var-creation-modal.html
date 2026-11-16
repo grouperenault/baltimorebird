@@ -50,12 +50,17 @@
                 Entre booléens: <code>A * B</code> = ET, <code>A + B</code> = OU · Une condition passe l'unité en <code>bool</code><br>
                 Rasters différents (ex. 10 Hz et 100 Hz): alignement automatique sur la voie la plus dense<br>
                 Fonctions: <code>abs()</code> <code>sqrt()</code> <code>sin()</code> <code>cos()</code> <code>log()</code> <code>exp()</code> <code>where(cond, x, y)</code><br>
-                Table: <code>interp1d(A, [x0, x1, …], [y0, y1, …])</code> interpole A dans la table, bords tenus
+                Table: <code>interp1d(A, [x0, x1, …], [y0, y1, …])</code> interpole A dans la table, bords tenus<br>
+                Cartographie: <code>interp2d(A, B, [x…], [y…], [[z…], …])</code> lit A en colonnes et B en lignes, une ligne de z par y
             </div>
 
-            <!-- Editeur de table pour interp1d (interp-table.js): ecrit l'appel dans la formule. -->
+            <!-- Editeurs de table (interp1d) et de cartographie (interp2d), interp-table.js:
+                 ecrivent l'appel dans la formule. -->
             <div class="interp-helper">
-                <button type="button" class="interp-helper-btn interp-helper-toggle" id="interpHelperToggle" aria-expanded="false" aria-controls="interpHelperBody">Table d'interpolation…</button>
+                <div class="interp-helper-toggles">
+                    <button type="button" class="interp-helper-btn interp-helper-toggle" id="interpHelperToggle" aria-expanded="false" aria-controls="interpHelperBody">Table d'interpolation…</button>
+                    <button type="button" class="interp-helper-btn interp-helper-toggle" id="interp2dHelperToggle" aria-expanded="false" aria-controls="interp2dHelperBody">Cartographie 2D…</button>
+                </div>
                 <div class="interp-helper-body" id="interpHelperBody" hidden>
                     <label class="interp-helper-label" for="interpInput">Entrée à interpoler</label>
                     <input type="text" class="interp-helper-input" id="interpInput" value="A" spellcheck="false">
@@ -63,6 +68,22 @@
                     <textarea class="interp-helper-table" id="interpTable" rows="6" spellcheck="false" placeholder="0&#9;0&#10;1000&#9;12.5&#10;3000&#9;48"></textarea>
                     <div class="interp-helper-status" id="interpStatus" aria-live="polite"></div>
                     <button type="button" class="interp-helper-btn interp-helper-apply" id="interpInsert">Insérer dans la formule</button>
+                </div>
+                <div class="interp-helper-body" id="interp2dHelperBody" hidden>
+                    <div class="interp-helper-inputs">
+                        <div>
+                            <label class="interp-helper-label" for="interp2dInputX">Entrée lue sur l'axe x (colonnes)</label>
+                            <input type="text" class="interp-helper-input" id="interp2dInputX" value="A" spellcheck="false">
+                        </div>
+                        <div>
+                            <label class="interp-helper-label" for="interp2dInputY">Entrée lue sur l'axe y (lignes)</label>
+                            <input type="text" class="interp-helper-input" id="interp2dInputY" value="B" spellcheck="false">
+                        </div>
+                    </div>
+                    <label class="interp-helper-label" for="interp2dTable">Cartographie : axe x en première ligne, axe y en première colonne (collez depuis un tableur)</label>
+                    <textarea class="interp-helper-table interp-helper-grid" id="interp2dTable" rows="8" wrap="off" spellcheck="false" placeholder="&#9;1000&#9;2000&#9;3000&#10;0&#9;1.5&#9;2.1&#9;2.8&#10;50&#9;3.2&#9;4.0&#9;5.1"></textarea>
+                    <div class="interp-helper-status" id="interp2dStatus" aria-live="polite"></div>
+                    <button type="button" class="interp-helper-btn interp-helper-apply" id="interp2dInsert">Insérer dans la formule</button>
                 </div>
             </div>
         </div>

@@ -324,8 +324,62 @@ def test_formula_length_allows_a_table():
     assert len(formula) > 500
     assert validate_formula(formula) == (True, None)
     assert np.allclose(_run(formula), [2, 10, 0, 20])
-    assert not validate_formula("A" + " + 1" * 2000)[0]
+    assert not validate_formula("A" + " + 1" * 6000)[0]
     print("test_formula_length_allows_a_table OK")
+
+
+# ---------------------------------------------------------------------------
+# interp2d : cartographie écrite dans la formule (lignes = axe y, colonnes = axe x)
+# ---------------------------------------------------------------------------
+def test_interp2d_bilinear_and_held_edges():
+    # z = x + 100 y ; A = [1, 5, 0, 10], B = [0, 1, 1, 1].
+    assert np.allclose(_run("interp2d(A, B, [0, 10], [0, 1], [[0, 10], [100, 110]])"), [1, 105, 100, 110])
+    # Hors cartographie sur chaque axe: bord tenu (2A -> 20 lu à 10, 3B -> 3 lu à 1).
+    assert np.allclose(_run("interp2d(A * 2, B * 3, [0, 10], [0, 1], [[0, 10], [100, 110]])"), [2, 110, 100, 110])
+    print("test_interp2d_bilinear_and_held_edges OK")
+
+
+def test_interp2d_matches_a_bilinear_map_on_uneven_axes():
+    # Une fonction bilinéaire est reproduite exactement, nœuds compris, sur des axes non uniformes.
+    xs, ys = [0.0, 2.0, 6.0, 7.5], [-1.0, 0.0, 3.0]
+    rows = [[x * y + 2 * x - y for x in xs] for y in ys]
+    rng = np.random.default_rng(0)
+    t = np.arange(200, dtype=float)
+    data = {"A": rng.uniform(0, 7.5, 200), "B": rng.uniform(-1, 3, 200)}
+    data["A"][:4], data["B"][:4] = [0, 2, 6, 7.5], [-1, 0, 3, 0]
+    got = _run(f"interp2d(A, B, {xs}, {ys}, {rows})", data, t)
+    expected = data["A"] * data["B"] + 2 * data["A"] - data["B"]
+    assert np.allclose(got, expected)
+    print("test_interp2d_matches_a_bilinear_map_on_uneven_axes OK")
+
+
+def test_interp2d_accepts_constants_and_composes():
+    assert np.allclose(_run("interp2d(5, 0.5, [0, 10], [0, 1], [[0, 10], [100, 110]]) + B"), [55, 56, 56, 56])
+    assert np.allclose(_run("interp2d(A, 1, ((0, 10)), (0, 1), ((0, 10), (100, 110)))"), [101, 105, 100, 110])
+    print("test_interp2d_accepts_constants_and_composes OK")
+
+
+def test_interp2d_rejects_malformed_maps():
+    grid = "[[0, 1], [2, 3]]"
+    assert "une ligne de valeurs par point" in _fails(f"interp2d(A, B, [0, 1], [0, 1, 2], {grid})")
+    assert "autant de valeurs que l'axe x" in _fails("interp2d(A, B, [0, 1], [0, 1], [[0, 1], [2, 3, 4]])")
+    assert "strictement croissants" in _fails(f"interp2d(A, B, [1, 0], [0, 1], {grid})")
+    assert "au moins 2 points" in _fails("interp2d(A, B, [0], [0, 1], [[0], [1]])")
+    assert "ligne par ligne" in _fails("interp2d(A, B, [0, 1], [0, 1], [0, 1])")
+    assert "attend une cartographie" in _fails(f"interp2d(A, B, C, [0, 1], {grid})")
+    assert "deux signaux" in _fails(f"interp2d([0, 1], B, [0, 1], [0, 1], {grid})")
+    assert "que des nombres" in _fails("interp2d(A, B, [0, 1], [0, 1], [[0, B], [2, 3]])")
+    assert "trop grande" in _fails(f"interp2d(A, B, {list(range(60))}, {list(range(60))}, {[list(range(60))] * 60})")
+    print("test_interp2d_rejects_malformed_maps OK")
+
+
+def test_nested_tables_stay_inside_table_functions():
+    # Une liste de listes n'existe que comme cartographie, et l'imbrication s'arrête à deux niveaux.
+    assert "interp" in _fails("[[1, 2], [3, 4]]")
+    assert "interp" in _fails("where(A > 1, [[1, 2]], 0)")
+    assert "interp" in _fails("interp2d(A, B, [0, 1], [0, 1], [[[0, 1]], [[2, 3]]])")
+    assert "attend une table" in _fails("interp1d(A, [[0, 1], [2, 3]], [0, 1])")
+    print("test_nested_tables_stay_inside_table_functions OK")
 
 
 # ---------------------------------------------------------------------------
