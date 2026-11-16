@@ -1,0 +1,69 @@
+<div class="run-view" id="runView">
+    <div class="run-main">
+        <!-- 1. Analyse -->
+        <section class="run-col run-col--analyses" aria-labelledby="runAnalysesTitle">
+            <header class="run-col-header">
+                <span class="run-step">1</span>
+                <h2 id="runAnalysesTitle">Analyse</h2>
+            </header>
+            <div class="run-col-body" id="runAnalysesList">
+                <div class="run-placeholder">Chargement...</div>
+            </div>
+        </section>
+
+        <!-- 2. Donnees -->
+        <section class="run-col run-col--data" aria-labelledby="runDataTitle">
+            <header class="run-col-header">
+                <span class="run-step">2</span>
+                <h2 id="runDataTitle">Données</h2>
+                <span class="run-col-hint">Données synthétiques de démonstration</span>
+            </header>
+            <div class="run-declared" id="runDeclared" hidden></div>
+            <div class="run-col-body" id="runDatasetsList">
+                <div class="run-placeholder">Choisissez d'abord une analyse</div>
+            </div>
+        </section>
+
+        <!-- 3. Lancer, et file d'execution -->
+        <section class="run-col run-col--launch" aria-labelledby="runLaunchTitle">
+            <header class="run-col-header">
+                <span class="run-step">3</span>
+                <h2 id="runLaunchTitle">Lancer</h2>
+            </header>
+            <div class="run-col-body">
+                <div class="run-summary" id="runSummary">
+                    <div class="run-placeholder">Choisissez une analyse et ses données</div>
+                </div>
+                <button class="btn-primary run-launch-btn" id="runLaunchBtn" type="button" data-action="launch" disabled>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="12" y1="5" x2="12" y2="19"/>
+                        <line x1="5" y1="12" x2="19" y2="12"/>
+                    </svg>
+                    Ajouter à la file
+                </button>
+                <div class="run-queue" id="runQueue" aria-live="polite"></div>
+            </div>
+        </section>
+    </div>
+
+    <!-- Console: avancement de la file -->
+    <section class="execution-console run-console" aria-labelledby="runConsoleTitle">
+        <div class="execution-console-header">
+            <h4 id="runConsoleTitle">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="4 17 10 11 4 5"/>
+                    <line x1="12" y1="19" x2="20" y2="19"/>
+                </svg>
+                Console
+            </h4>
+            <div class="execution-console-actions">
+                <button class="console-clear-btn" type="button" data-action="clear-console">Effacer</button>
+            </div>
+        </div>
+        <div class="execution-console-content" id="runConsoleContent" role="log">
+            <div class="console-line">
+                <span class="console-message">Prêt. Les analyses ajoutées à la file s'exécutent une par une.</span>
+            </div>
+        </div>
+    </section>
+</div>

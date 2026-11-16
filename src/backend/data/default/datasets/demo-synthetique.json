@@ -1,0 +1,45 @@
+{
+  "name": "Données de démo synthétiques",
+  "description": "Essai de roulage synthétique reproductible : 60 s échantillonnées à 50 Hz. Vitesse véhicule, régime moteur, température du liquide de refroidissement, pression de freinage.",
+  "samples": 3000,
+  "period": 0.02,
+  "seed": 42,
+  "signals": [
+    {
+      "name": "vehicle_speed",
+      "unit": "km/h",
+      "kind": "sine",
+      "amplitude": 45.0,
+      "frequency": 0.02,
+      "offset": 55.0,
+      "noise": 1.2
+    },
+    {
+      "name": "engine_rpm",
+      "unit": "rpm",
+      "kind": "sine",
+      "amplitude": 900.0,
+      "frequency": 0.02,
+      "offset": 2300.0,
+      "noise": 45.0
+    },
+    {
+      "name": "coolant_temp",
+      "unit": "degC",
+      "kind": "ramp",
+      "amplitude": 28.0,
+      "frequency": 0.0,
+      "offset": 62.0,
+      "noise": 0.25
+    },
+    {
+      "name": "brake_pressure",
+      "unit": "bar",
+      "kind": "square",
+      "amplitude": 9.0,
+      "frequency": 0.04,
+      "offset": 9.5,
+      "noise": 0.4
+    }
+  ]
+}

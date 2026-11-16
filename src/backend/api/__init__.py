@@ -9,6 +9,7 @@ from api.reports import reports_bp
 from api.conversion import conversion_bp
 from api.metrics import metrics_api_bp
 from api.scripts import scripts_bp
+from api.reporting import reporting_bp
 from api.layouts import layouts_bp
 from api.computed import computed_vars_bp
 from api.storage import storage_bp
@@ -25,6 +26,7 @@ def register_blueprints(app: Flask) -> None:
     app.register_blueprint(conversion_bp)
     app.register_blueprint(metrics_api_bp)
     app.register_blueprint(scripts_bp)
+    app.register_blueprint(reporting_bp)
     app.register_blueprint(layouts_bp)
     app.register_blueprint(computed_vars_bp)
     app.register_blueprint(storage_bp)

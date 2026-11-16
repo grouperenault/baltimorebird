@@ -51,7 +51,7 @@ Relevés par lecture du code au 2026-09-25 et test sur navigateur.
   droite par `refreshLivePreview`. Montrer à l'utilisateur un Python qui n'est
   pas celui qui tourne contredit l'invariant d'auditabilité. Expected behavior :
   retirer l'aperçu par bloc et le remplacer par la synchronisation décrite plus
-  bas.
+  bas. *Réglé le 2026-11-15* : aperçu par bloc retiré, voir ci-dessous.
 - **Déplacer une section dans sa propre descendance crée un cycle.** Les zones
   de dépôt des enfants d'une section restent actives pendant qu'on la glisse,
   et `moveBlock` ne vérifie pas l'ascendance. La section devient son propre
@@ -77,6 +77,10 @@ Relevés par lecture du code au 2026-09-25 et test sur navigateur.
   fait pas défiler le panneau de code, et l'inverse non plus. Le compilateur
   émet déjà une fonction par bloc, nommée d'après son identifiant et documentée
   par « Run block 'id' », donc la correspondance existe.
+  *Réglé dans un sens le 2026-11-15* : `compile-preview` renvoie `block_ranges`
+  (plages de lignes par bloc, calculées sur le module formaté), et sélectionner
+  un bloc fait défiler le panneau de code et surligne ses lignes. Le sens code
+  vers bloc reste à faire.
 - **Validation non rattachée aux blocs.** `validateRecipeDraft` produit des
   chaînes « Bloc id: ... », sans ancrage sur le bloc ni sur le champ
   (`EDT-03`, `EDT-04`). L'aperçu ne montre que la première erreur serveur.

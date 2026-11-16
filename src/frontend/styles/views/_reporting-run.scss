@@ -1,0 +1,535 @@
+@use '../abstracts/variables' as *;
+
+/* ===================================================
+   REPORTING - EXECUTER UNE ANALYSE
+   Trois colonnes: analyse, donnees, lancement.
+   =================================================== */
+
+.run-view {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+}
+
+.run-main {
+    flex: 1;
+    min-height: 0;
+    display: grid;
+    grid-template-columns: minmax(240px, 1fr) minmax(320px, 1.4fr) minmax(260px, 1fr);
+}
+
+.run-console {
+    flex: 0 0 30%;
+    max-height: 320px;
+}
+
+.run-col {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    min-height: 0;
+    border-right: 1px solid $border-color;
+    background: $bg-card;
+}
+
+.run-col:last-child {
+    border-right: none;
+}
+
+.run-col-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 14px 16px;
+    border-bottom: 1px solid $border-color;
+    flex-shrink: 0;
+}
+
+.run-col-header h2 {
+    margin: 0;
+    font-size: 14px;
+    font-weight: 600;
+    color: $text-white;
+}
+
+.run-col-hint {
+    margin-left: auto;
+    font-size: 11px;
+    color: $text-muted;
+}
+
+.run-step {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: $color-accent-muted;
+    color: $color-accent-text;
+    font-size: 11px;
+    font-weight: 700;
+}
+
+.run-col-body {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.run-placeholder {
+    padding: 16px;
+    color: $text-muted;
+    font-size: 12px;
+    line-height: 1.6;
+}
+
+.run-placeholder--error {
+    color: $ctp-red;
+}
+
+/* Analyses */
+.run-card {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    width: 100%;
+    padding: 10px 12px;
+    background: $bg-card-alt;
+    border: 1px solid transparent;
+    border-radius: 8px;
+    color: $text-light;
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s;
+}
+
+.run-card:hover {
+    background: $bg-hover;
+    border-color: $border-light;
+}
+
+.run-card.active {
+    border-color: $color-primary;
+    background: $bg-hover;
+}
+
+.run-card-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: $text-white;
+}
+
+.run-card-meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    color: $text-muted;
+}
+
+.run-card-desc {
+    font-size: 11px;
+    color: $text-muted;
+    line-height: 1.5;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.run-badge {
+    padding: 1px 6px;
+    border-radius: 4px;
+    background: $color-accent-muted;
+    color: $color-accent-text;
+    font-weight: 600;
+}
+
+.run-badge--muted {
+    background: transparent;
+    border: 1px solid $border-light;
+    color: $text-muted;
+}
+
+/* Signaux requis */
+.run-declared {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+    padding: 10px 16px;
+    border-bottom: 1px solid $border-color;
+    flex-shrink: 0;
+}
+
+.run-declared-label {
+    font-size: 11px;
+    color: $text-muted;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin-right: 4px;
+}
+
+.run-chip {
+    padding: 2px 8px;
+    border-radius: 10px;
+    background: $bg-card-alt;
+    border: 1px solid $border-light;
+    font-family: $font-mono;
+    font-size: 11px;
+    color: $text-light;
+}
+
+.run-chip em {
+    font-style: normal;
+    color: $text-muted;
+}
+
+/* Jeux de donnees */
+.run-dataset {
+    display: flex;
+    gap: 10px;
+    padding: 10px 12px;
+    background: $bg-card-alt;
+    border: 1px solid transparent;
+    border-radius: 8px;
+    cursor: pointer;
+}
+
+.run-dataset:hover {
+    border-color: $border-light;
+}
+
+.run-dataset.checked {
+    border-color: $color-primary;
+}
+
+.run-dataset input {
+    margin-top: 2px;
+    accent-color: var(--ctp-color-accent);
+}
+
+.run-dataset-body {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    min-width: 0;
+}
+
+.run-dataset-title {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    font-weight: 600;
+    color: $text-white;
+}
+
+.run-order {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 16px;
+    height: 16px;
+    border-radius: 4px;
+    background: $color-accent-muted;
+    color: $color-accent-text;
+    font-size: 10px;
+}
+
+.run-dataset-meta,
+.run-dataset-desc {
+    font-size: 11px;
+    color: $text-muted;
+}
+
+.run-res {
+    font-size: 11px;
+}
+
+.run-res--ok { color: $ctp-green; }
+.run-res--warn { color: $ctp-yellow; }
+.run-res--error { color: $ctp-red; }
+
+/* Lancement */
+.run-summary {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    font-size: 12px;
+    color: $text-light;
+    line-height: 1.5;
+}
+
+.run-summary-name {
+    font-size: 13px;
+    font-weight: 600;
+    color: $text-white;
+}
+
+.run-summary-blocker {
+    color: $ctp-yellow;
+}
+
+.run-launch-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+    margin-top: 8px;
+}
+
+.run-launch-btn svg {
+    width: 14px;
+    height: 14px;
+}
+
+/* File d'execution */
+.run-queue {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 12px;
+}
+
+.run-job {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 8px 10px;
+    background: $bg-card-alt;
+    border: 1px solid transparent;
+    border-radius: 6px;
+}
+
+.run-job--running {
+    border-color: $color-primary;
+}
+
+.run-job--cancelled {
+    opacity: 0.6;
+}
+
+.run-job-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+.run-job-label {
+    min-width: 0;
+    font-size: 12px;
+    font-weight: 600;
+    color: $text-white;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.run-job-state {
+    flex-shrink: 0;
+    font-size: 11px;
+    color: $text-muted;
+}
+
+.run-job-state--running {
+    color: $color-accent-text;
+    font-weight: 600;
+}
+
+.run-job-data {
+    font-size: 11px;
+    color: $text-muted;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.run-job-progress {
+    height: 3px;
+    background: $border-color;
+    border-radius: 2px;
+    overflow: hidden;
+}
+
+.run-job-progress span {
+    display: block;
+    height: 100%;
+    background: $color-primary;
+    transition: width 0.3s;
+}
+
+.run-job-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.run-job-actions:empty {
+    display: none;
+}
+
+.run-report-link {
+    padding: 2px 8px;
+    background: transparent;
+    border: 1px solid $border-light;
+    border-radius: 4px;
+    color: $color-accent-text;
+    font: inherit;
+    font-size: 11px;
+    cursor: pointer;
+}
+
+.run-report-link:hover {
+    background: $bg-hover;
+}
+
+.console-job {
+    flex-shrink: 0;
+    color: $text-muted;
+}
+
+.run-results-title {
+    font-size: 11px;
+    color: $text-muted;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+@media (max-width: 1100px) {
+    .run-view {
+        overflow-y: auto;
+    }
+
+    .run-main {
+        flex: none;
+        grid-template-columns: 1fr;
+        grid-auto-rows: minmax(220px, auto);
+    }
+
+    .run-col {
+        border-right: none;
+        border-bottom: 1px solid $border-color;
+    }
+}
+
+/* === Console (suivi de la file, deplacee depuis l'editeur) === */
+.execution-console {
+    height: 200px;
+    min-height: 150px;
+    background: $bg-darker;
+    border-top: 1px solid $border-color;
+    display: flex;
+    flex-direction: column;
+}
+
+.execution-console-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 16px;
+    background: $bg-darkest;
+    border-bottom: 1px solid $border-color;
+}
+
+.execution-console-header h4 {
+    font-size: 12px;
+    font-weight: 600;
+    color: $text-muted;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.execution-console-header h4 svg {
+    width: 14px;
+    height: 14px;
+}
+
+.console-clear-btn {
+    padding: 4px 8px;
+    font-size: 10px;
+    color: $text-light;
+    background: transparent;
+    border: 1px solid $border-light;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.console-clear-btn:hover {
+    color: $text-white;
+    border-color: $border-light;
+}
+
+.execution-console-content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 12px 16px;
+    font-family: 'Fira Code', 'SF Mono', Monaco, monospace;
+    font-size: 12px;
+    line-height: 1.6;
+}
+
+.console-line {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 4px;
+}
+
+.console-time { color: $text-darker; }
+.console-message { color: $text-lighter; }
+.console-message.info { color: $color-accent-text; }
+.console-message.success { color: $color-success; }
+.console-message.warning { color: $color-warning; }
+.console-message.error { color: $color-error; }
+
+/* Decoupage des donnees (par fichier / fusionne), choisi au lancement */
+.run-mode {
+    display: inline-flex;
+    align-self: flex-start;
+    padding: 2px;
+    background: $bg-card-alt;
+    border: 1px solid $border-color;
+    border-radius: 6px;
+}
+
+.run-mode-option {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 10px;
+    border-radius: 4px;
+    font-size: 12px;
+    color: $text-tertiary;
+    cursor: pointer;
+}
+
+.run-mode-option input {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.run-mode-option.active {
+    background: $color-accent-muted;
+    color: $color-accent-text;
+    font-weight: 600;
+}
+
+.run-mode-option:focus-within {
+    outline: 2px solid $color-primary;
+    outline-offset: 1px;
+}

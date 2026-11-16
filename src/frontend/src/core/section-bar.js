@@ -2,12 +2,12 @@
 //
 // Les sections a plusieurs vues partagent une barre d'onglets, au style de la barre des
 // fichiers de l'EDA (.file-bar, .file-tab), avec la marque a droite:
-// - Reporting: la bibliotheque des rapports (vue `reports`) et l'editeur d'analyses
-//   (vue `dashboard`, ses panneaux Execution / Edition / Mapping restant internes);
+// - Reporting: les trois temps d'une analyse generique: l'ecrire (vue `dashboard`),
+//   l'executer sur des donnees choisies (vue `reporting-run`), lire ses rapports (vue `reports`);
 // - Live Dashboards: le catalogue des tableaux de bord de l'equipe data (vue `live`).
 // L'EDA a sa propre barre (les fichiers ouverts): la barre de section y est masquee.
 //
-// Les identifiants de vue internes (`reports`, `dashboard`) sont conserves: le
+// Les identifiants de vue internes (`reports`, `dashboard`, `reporting-run`) sont conserves: le
 // verrouillage invite (auth.js), la visite guidee et l'initialisation des vues (init.js)
 // s'appuient dessus.
 
@@ -16,8 +16,9 @@ const SECTIONS = [
         nav: 'reports',
         label: 'Reporting',
         tabs: [
+            { view: 'dashboard', label: 'Analyses' },
+            { view: 'reporting-run', label: 'Exécuter' },
             { view: 'reports', label: 'Rapports' },
-            { view: 'dashboard', label: 'Éditeur' },
         ],
     },
     {

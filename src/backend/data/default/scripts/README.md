@@ -21,17 +21,11 @@ Les scripts sont stockés au format JSON avec l'extension `.json`.
   "modified": "2026-09-11T00:00:00Z",
   "blocks": [
     {
-      "id": "block_source",
-      "type": "synthetic_source",
+      "id": "block_inputs",
+      "type": "inputs",
       "config": {
         "name": "df",
-        "samples": 3000,
-        "period": 0.02,
-        "seed": 42,
-        "signals": [
-          {"name": "vehicle_speed", "unit": "km/h", "kind": "sine",
-           "amplitude": 45.0, "frequency": 0.02, "offset": 55.0, "noise": 1.2}
-        ]
+        "signals": "vehicle_speed km/h\nengine_rpm rpm"
       }
     },
     {
@@ -64,13 +58,19 @@ Les scripts sont stockés au format JSON avec l'extension `.json`.
 
 ## Types de blocs supportés
 
-Le catalogue fait foi : `services/dashboard/blocks.py` (`BLOCK_REGISTRY`). Chaque type ci-dessous
-est présent au moins une fois dans le script par défaut `script_analyse_standard.json`, garanti
-par le test `test_default_standard_recipe_covers_every_block_type`.
+Le catalogue fait foi : `services/dashboard/blocks.py` (`BLOCK_REGISTRY`). Chaque type ci-dessous,
+sauf `synthetic_source`, est présent au moins une fois dans le script par défaut
+`script_analyse_standard.json`, garanti par le test `test_default_standard_recipe_covers_every_block_type`.
+
+Une analyse ne contient pas ses données : son bloc `inputs` déclare les signaux requis, et les
+données sont choisies dans l'onglet Exécuter (jeux de `data/default/datasets/`), avec le mode :
+un rapport par jeu (`per_file`) ou un rapport sur tous les jeux (`merged`). Le mode n'appartient
+pas à l'analyse.
 
 | Type | Catégorie | Description | Config |
 |------|-----------|-------------|--------|
-| `synthetic_source` | data | Source de données synthétique déterministe | `name`, `samples`, `period`, `seed`, `signals[]` |
+| `inputs` | data | Signaux requis, une ligne `nom [unité]` ; données choisies à l'exécution | `name`, `signals` |
+| `synthetic_source` | data | Ancienne source intégrée à l'analyse, plus proposée dans l'éditeur ; compilée pour les analyses existantes | `name`, `samples`, `period`, `seed`, `signals[]` |
 | `title` | layout | Page de titre du rapport | `title`, `subtitle`, `author` |
 | `section` | layout | Titre de section | `title`, `level` (1/2/3) |
 | `text` | layout | Paragraphe | `content` |

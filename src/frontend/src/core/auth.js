@@ -373,7 +373,7 @@ async function getUserFeatures() {
 
 // --- UI Updates ---
 
-const AUTH_LOCKED_VIEWS = ['dashboard', 'reports'];
+const AUTH_LOCKED_VIEWS = ['dashboard', 'reports', 'reporting-run'];
 
 function updateLockedViews() {
     const isGuest = !currentUser;

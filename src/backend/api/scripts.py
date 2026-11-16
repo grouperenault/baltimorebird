@@ -17,7 +17,8 @@ from services.dashboard import (
     validate_generated_module_source,
     validate_recipe,
 )
-from services.dashboard.compiler import MODULE_RESULT_MARKER
+from services.dashboard.compiler import MODULE_RESULT_MARKER, SOURCE_BLOCK_TYPES, block_line_ranges
+from services.dashboard.inputs import INPUTS_BLOCK_TYPE, DatasetBinding, parse_declared_signals
 from services.dashboard.formatting import FormattedModule, format_module
 
 try:
@@ -144,6 +145,7 @@ def list_user_scripts(user_id: str) -> List[Dict]:
                     "created": data.get("created"),
                     "modified": data.get("modified"),
                     "blockCount": len(data.get("blocks", [])),
+                    **analysis_summary(data),
                     "source": "user",
                     "readonly": False,
                 })
@@ -170,6 +172,7 @@ def list_default_scripts() -> List[Dict]:
                     "description": data.get("description", ""),
                     "created": data.get("created"),
                     "blockCount": len(data.get("blocks", [])),
+                    **analysis_summary(data),
                     "source": "default",
                     "readonly": True,
                 })
@@ -177,6 +180,44 @@ def list_default_scripts() -> List[Dict]:
                 continue
 
     return scripts
+
+
+def find_inputs_block(script: Dict) -> Optional[Dict]:
+    """Return the inputs block of a recipe, or None for a recipe carrying its own data."""
+    stack = list(script.get("blocks", []) or [])
+    while stack:
+        block = stack.pop(0)
+        if not isinstance(block, dict):
+            continue
+        if block.get("type") == INPUTS_BLOCK_TYPE:
+            return block
+        children = block.get("children")
+        if isinstance(children, list):
+            stack[0:0] = children
+    return None
+
+
+def analysis_summary(script: Dict) -> Dict:
+    """Describe what an analysis needs to run: its declared input signals.
+
+    How the data is split (one run per dataset, or merged) is chosen at run time, not here.
+
+    Args:
+        script: The recipe document.
+
+    Returns:
+        ``inputs`` (declared signals, empty for a recipe carrying its own data, or while the
+        declaration is invalid) and ``hasInputs``.
+    """
+    block = find_inputs_block(script)
+    inputs: List[Dict[str, str]] = []
+    if block is not None:
+        try:
+            declared = parse_declared_signals(block.get("config", {}).get("signals"))
+            inputs = [{"name": signal.name, "unit": signal.unit} for signal in declared]
+        except ValueError:
+            inputs = []
+    return {"inputs": inputs, "hasInputs": block is not None}
 
 
 def validate_blocks(blocks: List[Dict]) -> tuple[bool, str]:
@@ -211,7 +252,7 @@ def _count_blocks(blocks: List[Dict]) -> int:
     return total
 
 
-def compile_and_format(script: Dict) -> FormattedModule:
+def compile_and_format(script: Dict, bindings: Optional[List[DatasetBinding]] = None) -> FormattedModule:
     """Compile a script recipe and Ruff-format it before it is shown or executed.
 
     Every route that needs generated source calls this, never ``compile_recipe`` directly, so
@@ -221,6 +262,7 @@ def compile_and_format(script: Dict) -> FormattedModule:
 
     Args:
         script: The persisted script/recipe document.
+        bindings: Datasets bound to the analysis inputs for a run; None for the analysis alone.
 
     Returns:
         The formatted (or original, on Ruff failure) module.
@@ -228,7 +270,7 @@ def compile_and_format(script: Dict) -> FormattedModule:
     Raises:
         ValueError: If the recipe is statically invalid.
     """
-    return format_module(compile_recipe(script))
+    return format_module(compile_recipe(script, bindings))
 
 
 PLATFORM_VERSION = "poc"
@@ -253,7 +295,7 @@ def _mapping_names(script: Dict) -> List[str]:
         for block in blocks:
             if not isinstance(block, dict):
                 continue
-            if block.get("type") == "synthetic_source":
+            if block.get("type") in SOURCE_BLOCK_TYPES:
                 name = str(block.get("config", {}).get("name", "")).strip()
                 if name:
                     names.append(name)
@@ -277,12 +319,13 @@ def _parse_artefacts(output: str) -> Dict:
         return {"document": []}
 
 
-def _execute_recipe(script: Dict, script_id: str) -> Dict:
+def _execute_recipe(script: Dict, script_id: str, bindings: Optional[List[DatasetBinding]] = None) -> Dict:
     """Compile, safety-check and run a recipe in the confined runner.
 
     Args:
         script: The recipe document.
         script_id: The recipe identifier (used for provenance).
+        bindings: Datasets bound to the analysis inputs; None runs the recipe as written.
 
     Returns:
         A run outcome with document artefacts, per-block statuses and provenance.
@@ -291,7 +334,7 @@ def _execute_recipe(script: Dict, script_id: str) -> Dict:
         ValueError: If the recipe is statically invalid.
         SafetyError: If the generated module fails the safety check.
     """
-    module = compile_and_format(script)
+    module = compile_and_format(script, bindings)
     safety = check_code_safety(module.source)
     if not safety["safe"]:
         raise SafetyError(safety["errors"])
@@ -336,6 +379,7 @@ def _execute_recipe(script: Dict, script_id: str) -> Dict:
         "output": result.output.split(MODULE_RESULT_MARKER)[0][-4000:],
         "error": result.error,
         "provenance": provenance,
+        "module_source": module.source,
         "format_warning": module.warning,
     }
 
@@ -525,6 +569,7 @@ def run_script(script_id: str):
         except ValueError:
             pass
 
+    outcome.pop("module_source", None)
     return jsonify({"success": True, "script_id": script_id, **outcome})
 
 
@@ -557,6 +602,8 @@ def compile_script(script_id: str):
         "safety_errors": safety["errors"],
         "validation_errors": validation_errors,
         "format_warning": module.warning,
+        # Lignes du module affiche qui appartiennent a chaque bloc (synchronisation bloc / code).
+        "block_ranges": block_line_ranges(module.source, module.block_functions),
     })
 
 
@@ -594,6 +641,8 @@ def compile_script_preview():
         "safety_errors": safety["errors"],
         "validation_errors": validation_errors,
         "format_warning": module.warning,
+        # Lignes du module affiche qui appartiennent a chaque bloc (synchronisation bloc / code).
+        "block_ranges": block_line_ranges(module.source, module.block_functions),
     })
 
 

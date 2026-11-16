@@ -1,0 +1,31 @@
+{
+  "kind": "analysis_run",
+  "analysis": {
+    "id": "script_analyse_standard",
+    "name": "Analyse standard (démo complète)",
+    "hash": "e96959c63219b05dd1c8ca75d88064ff299bc47557090269088e92605299ccb9",
+    "version": 1
+  },
+  "mode": "per_file",
+  "inputs": [
+    {
+      "dataset_id": "demo-synthetique",
+      "name": "Données de démo synthétiques",
+      "kind": "synthetic",
+      "hash": "be42c4f3a3d85931c376ac58a280b071bfe9823c58dc57aa48e9ee833458155e",
+      "matched": {
+        "vehicle_speed": "vehicle_speed",
+        "engine_rpm": "engine_rpm",
+        "coolant_temp": "coolant_temp",
+        "brake_pressure": "brake_pressure"
+      },
+      "unit_mismatches": []
+    }
+  ],
+  "status": "succeeded",
+  "duration": 1.143,
+  "module_hash": "41b6774452f819e9f111df0a6b5c6e26e2c527c36147c81d15371d5cc4096124",
+  "block_errors": {},
+  "created": "2026-11-15T22:00:04.927095Z",
+  "id": "demo"
+}

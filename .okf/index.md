@@ -58,4 +58,5 @@ contribution. Les concepts sous `roadmap/` sont prospectifs et portent
 - [Mode hors ligne](/roadmap/offline-first.md) - bundle local et question CORS
 - [Suite du Dashboard Builder](/roadmap/dashboard-builder-next.md) - ce qui est reporté après le PoC
 - [Dashboard Builder, ergonomie et chaîne d'exécution](/roadmap/dashboard-builder-ux.md) - hackathon Capgemini, audit et tranches
+- [Reporting par analyses génériques](/roadmap/reporting-analyses.md) - analyse écrite une fois, exécutée sur les données choisies, rapport avec provenance
 - [Décimation à budget partagé dans l'EDA](/roadmap/budget-constrained-decimation.md) - hackathon Capgemini, allocation globale du budget de points

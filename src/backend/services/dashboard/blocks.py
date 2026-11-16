@@ -16,6 +16,7 @@ import hashlib
 from dataclasses import dataclass, field
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
+from .inputs import DatasetBinding, parse_declared_signals, render_inputs_numpy, validate_inputs_config
 from .synthetic import parse_source_config, render_synthetic_numpy
 
 RESERVED_PREFIX = "_bb_"
@@ -71,6 +72,8 @@ class EmitContext:
     default_source_name: Optional[str] = None
     source_vars_by_name: Dict[str, str] = field(default_factory=dict)
     author: str = ""
+    # Datasets bound to the analysis inputs for a run; None compiles the editor preview.
+    input_bindings: Optional[List[DatasetBinding]] = None
 
     def slug(self, block_id: str) -> str:
         """Return a deterministic identifier-safe slug for a block id."""
@@ -141,6 +144,10 @@ def _validate_synthetic(config: Dict[str, Any]) -> List[str]:
     except ValueError as exc:
         errors.append(str(exc))
     return errors
+
+
+def _validate_inputs(config: Dict[str, Any]) -> List[str]:
+    return validate_inputs_config(config, RESERVED_PREFIX)
 
 
 def _validate_title(config: Dict[str, Any]) -> List[str]:
@@ -439,6 +446,15 @@ def _emit_synthetic(block: Dict[str, Any], ctx: EmitContext) -> BlockCode:
     return BlockCode(helpers=[helper], body=[f"state[{name!r}] = {fn_name}()"])
 
 
+def _emit_inputs(block: Dict[str, Any], ctx: EmitContext) -> BlockCode:
+    config = block.get("config", {})
+    fn_name = f"{RESERVED_PREFIX}input_{ctx.slug(block['id'])}"
+    name = str(config.get("name", "")).strip()
+    declared = parse_declared_signals(config.get("signals"))
+    helpers = render_inputs_numpy(fn_name, ctx.input_bindings, declared)
+    return BlockCode(helpers=helpers, body=[f"state[{name!r}] = {fn_name}()"])
+
+
 def _emit_title(block: Dict[str, Any], ctx: EmitContext) -> BlockCode:
     config = block.get("config", {})
     entries = (
@@ -662,6 +678,18 @@ BLOCK_REGISTRY: Dict[str, BlockSpec] = {
         ),
         validate=_validate_synthetic,
         emit=_emit_synthetic,
+    ),
+    "inputs": BlockSpec(
+        type="inputs",
+        title="Inputs",
+        category="data",
+        output="frame",
+        fields=(
+            FieldSpec("name", "Variable name", "text", default="df"),
+            FieldSpec("signals", "Signals (one per line: name [unit])", "textarea"),
+        ),
+        validate=_validate_inputs,
+        emit=_emit_inputs,
     ),
     "title": BlockSpec(
         type="title",

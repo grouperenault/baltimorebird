@@ -185,3 +185,8 @@ src/backend/metrics_data/daily_stats.json
 
 #Ignore vscode AI rules
 .github\instructions\codacy.instructions.md
+
+# Rapports generes par les executions d analyses (seul le rapport DEMO, et sa provenance, est versionne)
+src/backend/reports/*
+!src/backend/reports/demo.html
+!src/backend/reports/demo.json

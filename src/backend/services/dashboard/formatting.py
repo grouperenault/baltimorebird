@@ -15,8 +15,8 @@ from __future__ import annotations
 import logging
 import subprocess
 import sys
-from dataclasses import dataclass
-from typing import Optional, Tuple
+from dataclasses import dataclass, field
+from typing import Dict, Optional, Tuple
 
 from .compiler import CompiledModule
 
@@ -47,6 +47,8 @@ class FormattedModule:
     provenance_hash: str
     result_marker: str
     warning: Optional[str] = None
+    # Passed through from the compiled module: function name to recipe block id.
+    block_functions: Dict[str, str] = field(default_factory=dict)
 
 
 def format_module(module: CompiledModule) -> FormattedModule:
@@ -65,6 +67,7 @@ def format_module(module: CompiledModule) -> FormattedModule:
         provenance_hash=module.provenance_hash,
         result_marker=module.result_marker,
         warning=warning,
+        block_functions=dict(module.block_functions),
     )
 
 

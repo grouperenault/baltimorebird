@@ -233,7 +233,19 @@ def render_synthetic_numpy(fn_name: str, config: Dict[str, Any]) -> str:
     return "\n".join(lines)
 
 
-def _render_signal_numpy(signal: SyntheticSignal, base_seed: int) -> List[str]:
+def _render_signal_numpy(signal: SyntheticSignal, base_seed: int, column: str = "") -> List[str]:
+    """Render the numpy statements generating one signal into ``columns``.
+
+    Args:
+        signal: Signal definition. Its name seeds the noise, so values stay identical whatever
+            column the signal is published under.
+        base_seed: Source-level seed.
+        column: Column name to publish under; defaults to the signal name. An analysis input
+            publishes a dataset signal under the name the analysis declared.
+
+    Returns:
+        Indented source lines.
+    """
     lines: List[str] = [f"    angle = 2.0 * np.pi * {signal.frequency!r} * time"]
     if signal.kind == "sine":
         base_expr = "np.sin(angle)"
@@ -252,5 +264,5 @@ def _render_signal_numpy(signal: SyntheticSignal, base_seed: int) -> List[str]:
         seed = base_seed + _name_seed(signal.name)
         lines.append(f"    _rng = np.random.default_rng({seed})")
         lines.append(f"    _series = _series + _rng.normal(0.0, {signal.noise!r}, size=time.shape)")
-    lines.append(f"    columns[{signal.name!r}] = _series.astype(np.float32)")
+    lines.append(f"    columns[{(column or signal.name)!r}] = _series.astype(np.float32)")
     return lines

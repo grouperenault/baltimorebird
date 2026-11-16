@@ -479,8 +479,32 @@ def _render_provenance(provenance: Dict[str, Any]) -> str:
     if mapping:
         entries = ", ".join(html.escape(str(name)) for name in mapping)
         mapping_html = f"<div>Variable mapping: <code>{entries}</code></div>"
+    if provenance.get("analysis_hash"):
+        rows.append(("Analysis hash", str(provenance["analysis_hash"])))
+    if provenance.get("mode"):
+        rows.append(("Mode", str(provenance["mode"])))
     body = "".join(f"<div>{html.escape(label)}: <code>{html.escape(value)}</code></div>" for label, value in rows)
-    return f'<section class="provenance"><strong>Provenance</strong>{body}{mapping_html}</section>'
+    inputs_html = _render_inputs(provenance)
+    return f'<section class="provenance"><strong>Provenance</strong>{body}{mapping_html}{inputs_html}</section>'
+
+
+def _render_inputs(provenance: Dict[str, Any]) -> str:
+    """Render the datasets a run used, with the signal each declared input resolved to."""
+    inputs = provenance.get("inputs") or []
+    if not inputs:
+        return ""
+    items = []
+    for entry in inputs:
+        matched = entry.get("matched") or {}
+        pairs = ", ".join(
+            html.escape(str(declared) if declared == found else f"{declared} = {found}")
+            for declared, found in matched.items()
+        )
+        items.append(
+            f"<li>{html.escape(str(entry.get('name', '')))} <code>{html.escape(str(entry.get('hash', ''))[:16])}</code>"
+            f"{f' : <code>{pairs}</code>' if pairs else ''}</li>"
+        )
+    return f"<div>Inputs:<ul>{''.join(items)}</ul></div>"
 
 
 _TEMPLATE = """<!DOCTYPE html>

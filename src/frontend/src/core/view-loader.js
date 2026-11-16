@@ -15,6 +15,7 @@ const ViewLoader = (() => {
         live: '/views/live.html',
         dashboard: '/views/dashboard.html',
         reports: '/views/reports.html',
+        'reporting-run': '/views/reporting-run.html',
         utilities: '/views/utilities.html',
         'data-conversion': '/views/data-conversion.html',
         concatenation: '/views/concatenation.html',

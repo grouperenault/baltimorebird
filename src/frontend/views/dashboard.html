@@ -7,7 +7,7 @@
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <polygon points="5 3 19 12 5 21 5 3"/>
                 </svg>
-                Exécution
+                Analyses
             </button>
             <button class="dashboard-toggle-btn" data-panel="edition" onclick="switchDashboardPanel('edition')">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -15,16 +15,6 @@
                     <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
                 </svg>
                 Édition
-            </button>
-            <button class="dashboard-toggle-btn" data-panel="mapping" onclick="switchDashboardPanel('mapping')">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <circle cx="5" cy="6" r="3"/>
-                    <circle cx="19" cy="6" r="3"/>
-                    <circle cx="5" cy="18" r="3"/>
-                    <circle cx="19" cy="18" r="3"/>
-                    <path d="M8 6h8M8 18h8M5 9v6M19 9v6"/>
-                </svg>
-                Mapping
             </button>
         </div>
     </div>
@@ -41,35 +31,14 @@
                     <!-- Scripts List -->
                     <div class="execution-scripts">
                         <div class="execution-scripts-header">
-                            <h3>Scripts disponibles</h3>
-                            <span class="execution-scripts-count" id="scriptsCount">0 script(s)</span>
+                            <h3>Analyses</h3>
+                            <span class="execution-scripts-count" id="scriptsCount">0 analyse(s)</span>
                         </div>
                         <div id="scriptsList">
                             <div class="scripts-loading">Chargement des scripts...</div>
                         </div>
                     </div>
-                    
-                    <!-- Console -->
-                    <div class="execution-console">
-                        <div class="execution-console-header">
-                            <h4>
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                    <polyline points="4 17 10 11 4 5"/>
-                                    <line x1="12" y1="19" x2="20" y2="19"/>
-                                </svg>
-                                Console
-                            </h4>
-                            <div class="execution-console-actions">
-                                <button class="console-clear-btn" onclick="clearConsole()">Effacer</button>
-                            </div>
-                        </div>
-                        <div class="execution-console-content" id="consoleContent">
-                            <div class="console-line">
-                                <span class="console-time">[--:--:--]</span>
-                                <span class="console-message">Prêt. Sélectionnez un script à exécuter.</span>
-                            </div>
-                        </div>
-                    </div>
+
                 </div>
             </div>
             
@@ -85,200 +54,218 @@
                             <h3>Blocs</h3>
                         </div>
                         <div class="edition-palette-search">
-                            <input type="text" placeholder="Rechercher..." id="paletteSearch">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <circle cx="11" cy="11" r="7"/>
+                                <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                            </svg>
+                            <input type="search" placeholder="Rechercher un bloc" id="paletteSearch" aria-label="Rechercher un bloc" autocomplete="off">
                         </div>
                         <div class="edition-palette-blocks" id="paletteBlocks">
 
-                            <!-- Title block -->
-                            <div class="palette-block" draggable="true" data-block-type="title" style="--block-color: #f38ba8;">
-                                <div class="palette-block-icon">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                        <path d="M4 7h16"/>
-                                        <path d="M8 7v10"/>
-                                        <path d="M16 7v10"/>
-                                        <path d="M12 7v10"/>
-                                    </svg>
-                                </div>
-                                <div class="palette-block-info">
-                                    <div class="palette-block-name">Titre</div>
-                                    <div class="palette-block-desc">En-tête du rapport</div>
+                            <div class="palette-group" data-group="donnees">
+                                <h4 class="palette-group-title">Données</h4>
+                                <!-- Inputs block: signaux declares, donnees choisies a l'execution -->
+                                <div class="palette-block" draggable="true" data-block-type="inputs" style="--block-color: #94e2d5;">
+                                    <div class="palette-block-icon">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/>
+                                            <polyline points="10 17 15 12 10 7"/>
+                                            <line x1="15" y1="12" x2="3" y2="12"/>
+                                        </svg>
+                                    </div>
+                                    <div class="palette-block-info">
+                                        <div class="palette-block-name">Entrées</div>
+                                        <div class="palette-block-desc">Signaux requis, données choisies à l'exécution</div>
+                                    </div>
                                 </div>
                             </div>
 
-                            <!-- Synthetic source block -->
-                            <div class="palette-block" draggable="true" data-block-type="synthetic_source" style="--block-color: #f9e2af;">
-                                <div class="palette-block-icon">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                        <path d="M4 19V5M4 19h16"/>
-                                        <path d="m7 15 3-4 3 2 5-7"/>
-                                    </svg>
+                            <div class="palette-group" data-group="structure">
+                                <h4 class="palette-group-title">Structure</h4>
+                                <!-- Title block -->
+                                <div class="palette-block" draggable="true" data-block-type="title" style="--block-color: #f38ba8;">
+                                    <div class="palette-block-icon">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <path d="M4 7h16"/>
+                                            <path d="M8 7v10"/>
+                                            <path d="M16 7v10"/>
+                                            <path d="M12 7v10"/>
+                                        </svg>
+                                    </div>
+                                    <div class="palette-block-info">
+                                        <div class="palette-block-name">Titre</div>
+                                        <div class="palette-block-desc">En-tête du rapport</div>
+                                    </div>
                                 </div>
-                                <div class="palette-block-info">
-                                    <div class="palette-block-name">Source synthétique</div>
-                                    <div class="palette-block-desc">Données reproductibles</div>
-                                </div>
-                            </div>
-                            
-                            <!-- Section Block -->
-                            <div class="palette-block" draggable="true" data-block-type="section" style="--block-color: #8b5cf6;">
-                                <div class="palette-block-icon">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                        <path d="M4 6h16M4 12h16M4 18h7"/>
-                                    </svg>
-                                </div>
-                                <div class="palette-block-info">
-                                    <div class="palette-block-name">Section</div>
-                                    <div class="palette-block-desc">Conteneur hiérarchique</div>
-                                </div>
-                            </div>
-                            
-                            <!-- Text Block -->
-                            <div class="palette-block" draggable="true" data-block-type="text" style="--block-color: #64748b;">
-                                <div class="palette-block-icon">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                                        <path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/>
-                                    </svg>
-                                </div>
-                                <div class="palette-block-info">
-                                    <div class="palette-block-name">Texte</div>
-                                    <div class="palette-block-desc">Paragraphe</div>
+                                <!-- Section Block -->
+                                <div class="palette-block" draggable="true" data-block-type="section" style="--block-color: #8b5cf6;">
+                                    <div class="palette-block-icon">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <path d="M4 6h16M4 12h16M4 18h7"/>
+                                        </svg>
+                                    </div>
+                                    <div class="palette-block-info">
+                                        <div class="palette-block-name">Section</div>
+                                        <div class="palette-block-desc">Conteneur hiérarchique</div>
+                                    </div>
                                 </div>
                             </div>
-                            
-                            <!-- Callout Block -->
-                            <div class="palette-block" draggable="true" data-block-type="callout" style="--block-color: #f59e0b;">
-                                <div class="palette-block-icon">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                        <circle cx="12" cy="12" r="10"/>
-                                        <line x1="12" y1="8" x2="12" y2="12"/>
-                                        <line x1="12" y1="16" x2="12.01" y2="16"/>
-                                    </svg>
+
+                            <div class="palette-group" data-group="texte">
+                                <h4 class="palette-group-title">Texte</h4>
+                                <!-- Text Block -->
+                                <div class="palette-block" draggable="true" data-block-type="text" style="--block-color: #64748b;">
+                                    <div class="palette-block-icon">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                                            <path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/>
+                                        </svg>
+                                    </div>
+                                    <div class="palette-block-info">
+                                        <div class="palette-block-name">Texte</div>
+                                        <div class="palette-block-desc">Paragraphe</div>
+                                    </div>
                                 </div>
-                                <div class="palette-block-info">
-                                    <div class="palette-block-name">Callout</div>
-                                    <div class="palette-block-desc">Encadré</div>
+                                <!-- Callout Block -->
+                                <div class="palette-block" draggable="true" data-block-type="callout" style="--block-color: #f59e0b;">
+                                    <div class="palette-block-icon">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <circle cx="12" cy="12" r="10"/>
+                                            <line x1="12" y1="8" x2="12" y2="12"/>
+                                            <line x1="12" y1="16" x2="12.01" y2="16"/>
+                                        </svg>
+                                    </div>
+                                    <div class="palette-block-info">
+                                        <div class="palette-block-name">Callout</div>
+                                        <div class="palette-block-desc">Encadré</div>
+                                    </div>
                                 </div>
-                            </div>
-                            
-                            <!-- Metrics Block -->
-                     <!--   <div class="palette-block" hidden="true" draggable="true" data-block-type="metrics" style="--block-color: #22c55e;">
-                                <div class="palette-block-icon">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                        <rect x="3" y="3" width="7" height="7"/>
-                                        <rect x="14" y="3" width="7" height="7"/>
-                                        <rect x="14" y="14" width="7" height="7"/>
-                                        <rect x="3" y="14" width="7" height="7"/>
-                                    </svg>
-                                </div>
-                                <div class="palette-block-info">
-                                    <div class="palette-block-name">Métriques</div>
-                                    <div class="palette-block-desc">Cartes KPI</div>
-                                </div>
-                            </div>
-                            -->
-                            <!-- Table Block -->
-                            <div class="palette-block" draggable="true" data-block-type="table" style="--block-color: #06b6d4;">
-                                <div class="palette-block-icon">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                        <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
-                                        <line x1="3" y1="9" x2="21" y2="9"/>
-                                        <line x1="3" y1="15" x2="21" y2="15"/>
-                                        <line x1="9" y1="3" x2="9" y2="21"/>
-                                        <line x1="15" y1="3" x2="15" y2="21"/>
-                                    </svg>
-                                </div>
-                                <div class="palette-block-info">
-                                    <div class="palette-block-name">Tableau</div>
-                                    <div class="palette-block-desc">Données</div>
+                                <!-- LaTeX Block -->
+                                <div class="palette-block" draggable="true" data-block-type="latex" style="--block-color: #78716c;">
+                                    <div class="palette-block-icon">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <text x="4" y="17" font-size="14" font-family="serif" fill="currentColor">∑</text>
+                                        </svg>
+                                    </div>
+                                    <div class="palette-block-info">
+                                        <div class="palette-block-name">LaTeX</div>
+                                        <div class="palette-block-desc">Formule math</div>
+                                    </div>
                                 </div>
                             </div>
-                            
-                            <!-- Line Plot Block -->
-                            <div class="palette-block" draggable="true" data-block-type="lineplot" style="--block-color: #6366f1;">
-                                <div class="palette-block-icon">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                        <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
-                                    </svg>
+
+                            <div class="palette-group" data-group="chiffres">
+                                <h4 class="palette-group-title">Chiffres</h4>
+                                <!-- Metrics Block -->
+                         <!--   <div class="palette-block" hidden="true" draggable="true" data-block-type="metrics" style="--block-color: #22c55e;">
+                                    <div class="palette-block-icon">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <rect x="3" y="3" width="7" height="7"/>
+                                            <rect x="14" y="3" width="7" height="7"/>
+                                            <rect x="14" y="14" width="7" height="7"/>
+                                            <rect x="3" y="14" width="7" height="7"/>
+                                        </svg>
+                                    </div>
+                                    <div class="palette-block-info">
+                                        <div class="palette-block-name">Métriques</div>
+                                        <div class="palette-block-desc">Cartes KPI</div>
+                                    </div>
                                 </div>
-                                <div class="palette-block-info">
-                                    <div class="palette-block-name">Line Plot</div>
-                                    <div class="palette-block-desc">Graphique ligne</div>
+                                -->
+                                <!-- Table Block -->
+                                <div class="palette-block" draggable="true" data-block-type="table" style="--block-color: #06b6d4;">
+                                    <div class="palette-block-icon">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                                            <line x1="3" y1="9" x2="21" y2="9"/>
+                                            <line x1="3" y1="15" x2="21" y2="15"/>
+                                            <line x1="9" y1="3" x2="9" y2="21"/>
+                                            <line x1="15" y1="3" x2="15" y2="21"/>
+                                        </svg>
+                                    </div>
+                                    <div class="palette-block-info">
+                                        <div class="palette-block-name">Tableau</div>
+                                        <div class="palette-block-desc">Données</div>
+                                    </div>
                                 </div>
-                            </div>
-                            
-                            <!-- Scatter Plot Block -->
-                            <div class="palette-block" draggable="false" data-block-type="scatter" style="--block-color: #ec4899;">
-                                <div class="palette-block-icon">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                        <circle cx="7.5" cy="7.5" r="2"/>
-                                        <circle cx="16.5" cy="7.5" r="2"/>
-                                        <circle cx="7.5" cy="16.5" r="2"/>
-                                        <circle cx="16.5" cy="16.5" r="2"/>
-                                        <circle cx="12" cy="12" r="2"/>
-                                    </svg>
-                                </div>
-                                <div class="palette-block-info">
-                                    <div class="palette-block-name">Scatter</div>
-                                    <div class="palette-block-desc">Nuage de points</div>
-                                </div>
-                            </div>
-                            
-                            <!-- Histogram Block -->
-                            <div class="palette-block" draggable="false" data-block-type="histogram" style="--block-color: #14b8a6;">
-                                <div class="palette-block-icon">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                        <rect x="3" y="12" width="4" height="9"/>
-                                        <rect x="10" y="6" width="4" height="15"/>
-                                        <rect x="17" y="9" width="4" height="12"/>
-                                    </svg>
-                                </div>
-                                <div class="palette-block-info">
-                                    <div class="palette-block-name">Histogram</div>
-                                    <div class="palette-block-desc">Distribution</div>
-                                </div>
-                            </div>
-                            
-                            <!-- Stats Block -->
-                            <div class="palette-block" draggable="false" data-block-type="stats" style="--block-color: #a855f7;">
-                                <div class="palette-block-icon">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                        <path d="M18 20V10M12 20V4M6 20v-6"/>
-                                    </svg>
-                                </div>
-                                <div class="palette-block-info">
-                                    <div class="palette-block-name">Stats</div>
-                                    <div class="palette-block-desc">Statistiques</div>
+                                <!-- Stats Block -->
+                                <div class="palette-block" draggable="false" data-block-type="stats" style="--block-color: #a855f7;">
+                                    <div class="palette-block-icon">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <path d="M18 20V10M12 20V4M6 20v-6"/>
+                                        </svg>
+                                    </div>
+                                    <div class="palette-block-info">
+                                        <div class="palette-block-name">Stats</div>
+                                        <div class="palette-block-desc">Statistiques</div>
+                                    </div>
                                 </div>
                             </div>
-                            
-                            <!-- LaTeX Block -->
-                            <div class="palette-block" draggable="true" data-block-type="latex" style="--block-color: #78716c;">
-                                <div class="palette-block-icon">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                        <text x="4" y="17" font-size="14" font-family="serif" fill="currentColor">∑</text>
-                                    </svg>
+
+                            <div class="palette-group" data-group="graphiques">
+                                <h4 class="palette-group-title">Graphiques</h4>
+                                <!-- Line Plot Block -->
+                                <div class="palette-block" draggable="true" data-block-type="lineplot" style="--block-color: #6366f1;">
+                                    <div class="palette-block-icon">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+                                        </svg>
+                                    </div>
+                                    <div class="palette-block-info">
+                                        <div class="palette-block-name">Line Plot</div>
+                                        <div class="palette-block-desc">Graphique ligne</div>
+                                    </div>
                                 </div>
-                                <div class="palette-block-info">
-                                    <div class="palette-block-name">LaTeX</div>
-                                    <div class="palette-block-desc">Formule math</div>
+                                <!-- Scatter Plot Block -->
+                                <div class="palette-block" draggable="false" data-block-type="scatter" style="--block-color: #ec4899;">
+                                    <div class="palette-block-icon">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <circle cx="7.5" cy="7.5" r="2"/>
+                                            <circle cx="16.5" cy="7.5" r="2"/>
+                                            <circle cx="7.5" cy="16.5" r="2"/>
+                                            <circle cx="16.5" cy="16.5" r="2"/>
+                                            <circle cx="12" cy="12" r="2"/>
+                                        </svg>
+                                    </div>
+                                    <div class="palette-block-info">
+                                        <div class="palette-block-name">Scatter</div>
+                                        <div class="palette-block-desc">Nuage de points</div>
+                                    </div>
+                                </div>
+                                <!-- Histogram Block -->
+                                <div class="palette-block" draggable="false" data-block-type="histogram" style="--block-color: #14b8a6;">
+                                    <div class="palette-block-icon">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <rect x="3" y="12" width="4" height="9"/>
+                                            <rect x="10" y="6" width="4" height="15"/>
+                                            <rect x="17" y="9" width="4" height="12"/>
+                                        </svg>
+                                    </div>
+                                    <div class="palette-block-info">
+                                        <div class="palette-block-name">Histogram</div>
+                                        <div class="palette-block-desc">Distribution</div>
+                                    </div>
                                 </div>
                             </div>
-                            
-                            <!-- Code Block -->
-                            <div class="palette-block" draggable="true" data-block-type="python" style="--block-color: #334155;">
-                                <div class="palette-block-icon">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                        <polyline points="16 18 22 12 16 6"/>
-                                        <polyline points="8 6 2 12 8 18"/>
-                                    </svg>
-                                </div>
-                                <div class="palette-block-info">
-                                    <div class="palette-block-name">Python</div>
-                                    <div class="palette-block-desc">Python custom</div>
+
+                            <div class="palette-group" data-group="code">
+                                <h4 class="palette-group-title">Code</h4>
+                                <!-- Code Block -->
+                                <div class="palette-block" draggable="true" data-block-type="python" style="--block-color: #334155;">
+                                    <div class="palette-block-icon">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <polyline points="16 18 22 12 16 6"/>
+                                            <polyline points="8 6 2 12 8 18"/>
+                                        </svg>
+                                    </div>
+                                    <div class="palette-block-info">
+                                        <div class="palette-block-name">Python</div>
+                                        <div class="palette-block-desc">Python custom</div>
+                                    </div>
                                 </div>
                             </div>
-                            
+
+                            <p class="palette-empty" id="paletteEmpty" hidden>Aucun bloc ne correspond à la recherche.</p>
                         </div>
                     </aside>
                     
@@ -287,7 +274,7 @@
                         <div class="edition-canvas-toolbar">
                             <div class="edition-canvas-toolbar-left">
                                 <div class="edition-script-name">
-                                    <input type="text" value="Nouveau Script" id="currentScriptName">
+                                    <input type="text" value="Nouvelle analyse" id="currentScriptName">
                                 </div>
                                 <span class="script-status-indicator" id="scriptStatus">Nouveau</span>
                             </div>
@@ -322,13 +309,6 @@
                                         <polygon points="5 3 19 12 5 21 5 3"/>
                                     </svg>
                                     Exécuter
-                                </button>
-                                <button class="edition-toolbar-btn primary" data-toolbar-action="generate-report">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                                        <polyline points="14 2 14 8 20 8"/>
-                                    </svg>
-                                    Générer le rapport
                                 </button>
                             </div>
                         </div>
@@ -404,82 +384,6 @@
                 </div>
             </div>
             
-            <!-- ============================================
-                 MAPPING PANEL
-                 ============================================ -->
-            <div class="dashboard-panel">
-                <div class="mapping-panel">
-                    <div class="mapping-header">
-                        <div class="mapping-header-left">
-                            <h2>Signal Mapping</h2>
-                            <p>Définissez les correspondances entre les noms internes et les signaux sources</p>
-                        </div>
-                        <div class="mapping-header-right">
-                            <button class="mapping-btn secondary" onclick="importMappings()">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                                    <polyline points="7 10 12 15 17 10"/>
-                                    <line x1="12" y1="15" x2="12" y2="3"/>
-                                </svg>
-                                Importer
-                            </button>
-                            <button class="mapping-btn secondary" onclick="exportMappings()">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                                    <polyline points="17 8 12 3 7 8"/>
-                                    <line x1="12" y1="3" x2="12" y2="15"/>
-                                </svg>
-                                Exporter
-                            </button>
-                            <button class="mapping-btn primary" onclick="addMappingVariable()">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                    <line x1="12" y1="5" x2="12" y2="19"/>
-                                    <line x1="5" y1="12" x2="19" y2="12"/>
-                                </svg>
-                                Nouvelle variable
-                            </button>
-                        </div>
-                    </div>
-                    
-                    <div class="mapping-toolbar">
-                        <div class="mapping-search">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <circle cx="11" cy="11" r="8"/>
-                                <path d="M21 21l-4.35-4.35"/>
-                            </svg>
-                            <input type="text" placeholder="Rechercher une variable..." id="mappingSearch">
-                        </div>
-                        <div class="mapping-stats">
-                            <span id="mappingCount">0 variable(s)</span>
-                        </div>
-                    </div>
-                    
-                    <div class="mapping-list" id="mappingList">
-                        <div class="mapping-empty" id="mappingEmpty">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-                                <circle cx="5" cy="6" r="3"/>
-                                <circle cx="19" cy="6" r="3"/>
-                                <circle cx="5" cy="18" r="3"/>
-                                <circle cx="19" cy="18" r="3"/>
-                                <path d="M8 6h8M8 18h8M5 9v6M19 9v6"/>
-                            </svg>
-                            <h3>Aucun mapping défini</h3>
-                            <p>Créez des variables internes et associez-leur des signaux sources</p>
-                            <button class="mapping-btn primary" onclick="addMappingVariable()">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                    <line x1="12" y1="5" x2="12" y2="19"/>
-                                    <line x1="5" y1="12" x2="19" y2="12"/>
-                                </svg>
-                                Créer une variable
-                            </button>
-                        </div>
-                        
-                        <div class="mapping-items" id="mappingItems" style="display: none;">
-                            <!-- Mapping items rendered by JS -->
-                        </div>
-                    </div>
-                </div>
-            </div>
             
         </div>
     </div>

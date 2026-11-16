@@ -20,8 +20,6 @@ const DashboardEditor = (function() {
     let currentScriptReadonly = false;
     let isScriptModified = false;
     let scriptsList = [];
-    let signalMappings = [];
-    let mappingIdCounter = 0;
     let dragState = {
         type: null,        // 'palette' | 'canvas'
         blockType: null,   // For palette drags
@@ -31,6 +29,9 @@ const DashboardEditor = (function() {
     let livePreviewTimer = null;
     let livePreviewAbortController = null;
     let selectedBlockId = null;
+    // Lignes du module affiche a droite qui appartiennent a chaque bloc, fournies par le
+    // compilateur (compile-preview): { blockId: [[premiere, derniere], ...] }.
+    let blockRanges = {};
     let synthSourceRenderTimer = null;
 
     const SCRIPTS_API = '/api/scripts';
@@ -48,8 +49,7 @@ const DashboardEditor = (function() {
                 { id: 'title', label: 'Titre', type: 'text', default: 'Nouveau rapport' },
                 { id: 'subtitle', label: 'Sous-titre', type: 'text', default: '' },
                 { id: 'author', label: 'Auteur', type: 'text', default: '' }
-            ],
-            generateCode: (config) => `document.append({'kind': 'title', 'title': ${JSON.stringify(config.title || '')}, 'subtitle': ${JSON.stringify(config.subtitle || '')}, 'author': ${JSON.stringify(config.author || '')}})`
+            ]
         },
         synthetic_source: {
             name: 'Source synthétique',
@@ -61,8 +61,16 @@ const DashboardEditor = (function() {
                 { id: 'period', label: 'Période (s)', type: 'number', default: 0.01 },
                 { id: 'seed', label: 'Seed', type: 'number', default: 42 },
                 { id: 'signals', label: 'Signaux (JSON)', type: 'textarea', default: '[{"name":"signal_a","unit":"V","kind":"sine","amplitude":1,"frequency":0.5}]' }
-            ],
-            generateCode: (config) => `synthetic_source(${config.name || 'df'}, samples=${config.samples}, seed=${config.seed})`
+            ]
+        },
+        inputs: {
+            name: 'Entrées',
+            icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>`,
+            color: '#94e2d5',
+            config: [
+                { id: 'name', label: 'Nom de variable', type: 'text', default: 'df' },
+                { id: 'signals', label: 'Signaux requis (un par ligne : nom [unité])', type: 'textarea', default: 'vehicle_speed km/h\nengine_rpm rpm' }
+            ]
         },
         section: {
             name: 'Section',
@@ -72,8 +80,7 @@ const DashboardEditor = (function() {
             config: [
                 { id: 'title', label: 'Titre', type: 'text', default: 'Nouvelle Section' },
                 { id: 'level', label: 'Niveau', type: 'select', options: ['H1', 'H2', 'H3'], default: 'H1' }
-            ],
-            generateCode: (config) => `report.add(Section("${config.title}", level=${config.level === 'H1' ? 1 : config.level === 'H2' ? 2 : 3}))`
+            ]
         },
         text: {
             name: 'Texte',
@@ -81,8 +88,7 @@ const DashboardEditor = (function() {
             color: '#64748b',
             config: [
                 { id: 'content', label: 'Contenu', type: 'textarea', default: 'Votre texte ici...' }
-            ],
-            generateCode: (config) => `report.add(Text("""${config.content}"""))`
+            ]
         },
         callout: {
             name: 'Callout',
@@ -92,8 +98,7 @@ const DashboardEditor = (function() {
                 { id: 'type', label: 'Type', type: 'select', options: ['info', 'success', 'warning', 'danger'], default: 'info' },
                 { id: 'title', label: 'Titre', type: 'text', default: 'Information' },
                 { id: 'content', label: 'Contenu', type: 'textarea', default: 'Message...' }
-            ],
-            generateCode: (config) => `report.add(Callout("${config.type}", "${config.title}", "${config.content}"))`
+            ]
         },
         metrics: {
             name: 'Métriques',
@@ -101,17 +106,7 @@ const DashboardEditor = (function() {
             color: '#22c55e',
             config: [
                 { id: 'metrics', label: 'Métriques', type: 'textarea', default: 'Points: len(df)\nDurée: df["time"].max()' }
-            ],
-            generateCode: (config) => {
-                const metricsStr = config.metrics || '';
-                if (!metricsStr.trim()) return 'report.add(Metrics([]))';
-                const lines = metricsStr.split('\n').filter(m => m.includes(':'));
-                const formatted = lines.map(m => {
-                    const parts = m.split(':');
-                    return `("${parts[0].trim()}", ${parts[1]?.trim() || '""'})`;
-                }).join(',\n    ');
-                return `report.add(Metrics([\n    ${formatted}\n]))`;
-            }
+            ]
         },
         table: {
             name: 'Tableau',
@@ -121,8 +116,7 @@ const DashboardEditor = (function() {
                 { id: 'source', label: 'Source', type: 'source', options: [], default: 'df' },
                 { id: 'caption', label: 'Légende', type: 'text', default: 'Tableau de données' },
                 { id: 'max_rows', label: 'Max lignes', type: 'number', default: 20 }
-            ],
-            generateCode: (config) => `report.add(Table(${config.source || 'df'}, caption="${config.caption}", max_rows=${config.max_rows}))`
+            ]
         },
         lineplot: {
             name: 'Line Plot',
@@ -133,8 +127,7 @@ const DashboardEditor = (function() {
                 { id: 'signal', label: 'Signal', type: 'select', options: [], default: '' },
                 { id: 'title', label: 'Titre', type: 'text', default: 'Graphique' },
                 { id: 'color', label: 'Couleur', type: 'color', default: '#6366f1' }
-            ],
-            generateCode: (config) => `report.add(LinePlot(${config.source || 'df'}, x="time", y="${config.signal}", title="${config.title}", color="${config.color}"))`
+            ]
         },
         scatter: {
             name: 'Scatter Plot',
@@ -145,8 +138,7 @@ const DashboardEditor = (function() {
                 { id: 'y', label: 'Axe Y', type: 'select', options: [], default: '' },
                 { id: 'color_by', label: 'Couleur par', type: 'select', options: [], default: '' },
                 { id: 'title', label: 'Titre', type: 'text', default: 'Scatter Plot' }
-            ],
-            generateCode: (config) => `report.add(ScatterPlot(df, x="${config.x}", y="${config.y}"${config.color_by ? `, color="${config.color_by}"` : ''}, title="${config.title}"))`
+            ]
         },
         histogram: {
             name: 'Histogram',
@@ -156,8 +148,7 @@ const DashboardEditor = (function() {
                 { id: 'signal', label: 'Signal', type: 'select', options: [], default: '' },
                 { id: 'bins', label: 'Bins', type: 'number', default: 30 },
                 { id: 'title', label: 'Titre', type: 'text', default: 'Distribution' }
-            ],
-            generateCode: (config) => `report.add(Histogram(df, column="${config.signal}", bins=${config.bins}, title="${config.title}"))`
+            ]
         },
         stats: {
             name: 'Stats',
@@ -166,8 +157,7 @@ const DashboardEditor = (function() {
             config: [
                 { id: 'signals', label: 'Signaux', type: 'text', default: '*' },
                 { id: 'caption', label: 'Légende', type: 'text', default: 'Statistiques' }
-            ],
-            generateCode: (config) => `report.add(StatsTable(df, signals="${config.signals}", caption="${config.caption}"))`
+            ]
         },
         latex: {
             name: 'LaTeX',
@@ -175,20 +165,17 @@ const DashboardEditor = (function() {
             color: '#78716c',
             config: [
                 { id: 'expression', label: 'Expression', type: 'text', default: 'E = mc^2' }
-            ],
-            generateCode: (config) => `report.add(LaTeX(r"${config.expression}"))`
+            ]
         },
         python: {
             name: 'Python',
             icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>`,
             color: '#334155',
-            hideCodePreview: true, // No duplicate preview for code blocks
             config: [
                 { id: 'code', label: 'Code', type: 'code', default: "return {'data': [], 'layout': {'title': {'text': 'Figure personnalisée'}}}" },
                 { id: 'inputs', label: 'Variables (séparées par des virgules)', type: 'text', default: 'df' },
                 { id: 'output', label: 'Sortie', type: 'select', options: ['figure', 'table'], default: 'figure' }
-            ],
-            generateCode: (config) => config.code
+            ]
         }
     };
 
@@ -265,7 +252,6 @@ const DashboardEditor = (function() {
             type: blockType,
             config: config,
             collapsed: false,
-            codePreviewExpanded: false,
             children: def.isContainer ? [] : undefined
         };
     }
@@ -361,16 +347,12 @@ const DashboardEditor = (function() {
         
         const toggle = document.getElementById('dashboardToggle');
         if (toggle) {
-            toggle.classList.remove('edition', 'mapping');
-            if (panel === 'edition') toggle.classList.add('edition');
-            else if (panel === 'mapping') toggle.classList.add('mapping');
+            toggle.classList.toggle('edition', panel === 'edition');
         }
         
         const track = document.getElementById('dashboardSliderTrack');
         if (track) {
-            track.classList.remove('show-edition', 'show-mapping');
-            if (panel === 'edition') track.classList.add('show-edition');
-            else if (panel === 'mapping') track.classList.add('show-mapping');
+            track.classList.toggle('show-edition', panel === 'edition');
         }
     }
 
@@ -378,30 +360,12 @@ const DashboardEditor = (function() {
     // Console
     // =========================================================================
 
+    // La console de suivi est dans l'onglet Executer: les retours de l'editeur (chargement,
+    // sauvegarde, validation) passent par les notifications non bloquantes. Les messages
+    // d'etape ('info') n'y sont pas repris.
     function logToConsole(message, type = '') {
-        const consoleEl = document.getElementById('consoleContent');
-        if (!consoleEl) return;
-        
-        const time = new Date().toLocaleTimeString('fr-FR', { 
-            hour: '2-digit', 
-            minute: '2-digit', 
-            second: '2-digit' 
-        });
-        
-        const line = document.createElement('div');
-        line.className = 'console-line';
-        line.innerHTML = `<span class="console-time">[${time}]</span><span class="console-message ${type}">${escapeHtml(message)}</span>`;
-        
-        consoleEl.appendChild(line);
-        consoleEl.scrollTop = consoleEl.scrollHeight;
-    }
-
-    function clearConsole() {
-        const consoleEl = document.getElementById('consoleContent');
-        if (consoleEl) {
-            consoleEl.innerHTML = '';
-            logToConsole('Console effacée.');
-        }
+        if (!type || type === 'info') return;
+        if (typeof window.showNotification === 'function') window.showNotification(message, type);
     }
 
     // =========================================================================
@@ -421,7 +385,7 @@ const DashboardEditor = (function() {
             const data = await res.json();
             
             scriptsList = data.scripts || [];
-            if (countEl) countEl.textContent = `${scriptsList.length} script(s)`;
+            if (countEl) countEl.textContent = `${scriptsList.length} analyse(s)`;
             
             if (scriptsList.length === 0) {
                 listContainer.innerHTML = `
@@ -432,8 +396,8 @@ const DashboardEditor = (function() {
                             <line x1="12" y1="18" x2="12" y2="12"/>
                             <line x1="9" y1="15" x2="15" y2="15"/>
                         </svg>
-                        <p>Aucun script disponible</p>
-                        <p class="scripts-empty-hint">Créez un nouveau script dans l'onglet Édition</p>
+                        <p>Aucune analyse disponible</p>
+                        <p class="scripts-empty-hint">Créez une analyse dans l'onglet Édition</p>
                     </div>
                 `;
                 return;
@@ -456,11 +420,17 @@ const DashboardEditor = (function() {
         const listContainer = document.getElementById('scriptsList');
         if (!listContainer) return;
         
+        // Etats ecrits par le serveur (succeeded, partial, failed) et anciens etats (success, error).
+        const STATUS = {
+            succeeded: ['success', '✓'], success: ['success', '✓'],
+            partial: ['warning', '⚠'],
+            failed: ['error', '✗'], error: ['error', '✗'],
+        };
         listContainer.innerHTML = scriptsList.map(script => {
-            const statusClass = script.lastRunStatus === 'success' ? 'success' : 
-                               script.lastRunStatus === 'error' ? 'error' : '';
-            const statusIcon = script.lastRunStatus === 'success' ? '✓' : 
-                              script.lastRunStatus === 'error' ? '✗' : '';
+            const [statusClass, statusIcon] = STATUS[script.lastRunStatus] || ['', ''];
+            const inputs = script.hasInputs
+                ? `${(script.inputs || []).length} signal(aux) en entrée`
+                : 'données intégrées';
             
             return `
                 <div class="script-card" data-script-id="${script.id}">
@@ -476,7 +446,7 @@ const DashboardEditor = (function() {
                         <div class="script-card-content">
                             <div class="script-card-name">${escapeHtml(script.name)}</div>
                             <div class="script-card-meta">
-                                <span class="script-card-blocks">${script.blockCount || 0} blocs</span>
+                                <span class="script-card-blocks">${script.blockCount || 0} blocs · ${escapeHtml(inputs)}</span>
                                 ${script.lastRun
                                     ? `<span class="script-card-status ${statusClass}">${statusIcon} ${formatDate(script.lastRun)}</span>`
                                     : ''}
@@ -492,16 +462,8 @@ const DashboardEditor = (function() {
                             </svg>
                             <span>Éditer</span>
                         </button>
-                        <button class="script-btn script-btn-report" data-action="report" data-script-id="${script.id}"
-                                title="Générer le rapport HTML">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                                <polyline points="14 2 14 8 20 8"/>
-                            </svg>
-                            <span>Rapport</span>
-                        </button>
                         <button class="script-btn script-btn-run" data-action="run" data-script-id="${script.id}"
-                                title="Exécuter">
+                                title="Choisir les données et exécuter">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <polygon points="5 3 19 12 5 21 5 3"/>
                             </svg>
@@ -529,61 +491,7 @@ const DashboardEditor = (function() {
         if (action === 'edit') {
             editScript(scriptId);
         } else if (action === 'run') {
-            runScript(scriptId);
-        } else if (action === 'report') {
-            const script = scriptsList.find(item => item.id === scriptId);
-            downloadReport(scriptId, script ? script.name : 'rapport');
-        }
-    }
-
-    async function runScript(scriptId) {
-        const script = scriptsList.find(s => s.id === scriptId);
-        const scriptName = script ? script.name : scriptId;
-        
-        logToConsole(`Démarrage de "${scriptName}"...`, 'info');
-        
-        try {
-            const res = await authFetch(`${SCRIPTS_API}/${scriptId}/run`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' }
-            });
-            
-            const data = await res.json();
-            
-            if (data.success) {
-                logToConsole(`Chargement des données...`);
-                logToConsole(`Génération du rapport...`);
-                const statusMessage = data.status === 'partial'
-                    ? 'Rapport généré avec des blocs en échec.'
-                    : 'Rapport généré avec succès !';
-                const statusType = data.status === 'partial' ? 'warning' : 'success';
-                logToConsole(`${data.status === 'partial' ? '⚠' : '✓'} ${statusMessage} (${data.duration}s)`, statusType);
-                if (data.block_status) {
-                    const failedBlocks = Object.entries(data.block_status)
-                        .filter(([, status]) => status === 'failed')
-                        .map(([blockId]) => blockId);
-                    if (failedBlocks.length > 0) {
-                        logToConsole(`Blocs en échec : ${failedBlocks.join(', ')}`, 'error');
-                    }
-                    const skippedBlocks = Object.entries(data.block_status)
-                        .filter(([, status]) => status === 'skipped')
-                        .map(([blockId]) => blockId);
-                    if (skippedBlocks.length > 0) {
-                        logToConsole(`Blocs ignorés : ${skippedBlocks.join(', ')}`, 'warning');
-                    }
-                }
-                if (data.block_errors) {
-                    Object.entries(data.block_errors).forEach(([blockId, message]) => {
-                        logToConsole(`${blockId}: ${message}`, 'error');
-                    });
-                }
-                loadScriptsList();
-            } else {
-                logToConsole(`✗ Erreur: ${data.error}`, 'error');
-            }
-        } catch (e) {
-            console.error('Failed to run script:', e);
-            logToConsole(`✗ Erreur d'exécution: ${e.message}`, 'error');
+            openRun(scriptId);
         }
     }
 
@@ -752,7 +660,6 @@ const DashboardEditor = (function() {
 
         setupDragAndDrop();
         setupCodeEditors();
-        highlightCode();
         restoreFocusState(focusState);
 
         if (editionCanvas) {
@@ -853,22 +760,6 @@ const DashboardEditor = (function() {
                     <div class="canvas-block-config">
                         ${renderBlockConfig(block)}
                     </div>
-                    
-                    ${!def.hideCodePreview ? `
-                        <div class="canvas-block-code ${block.codePreviewExpanded ? 'expanded' : ''}" data-block-id="${block.id}">
-                            <div class="canvas-block-code-header" data-action="toggle-code" data-block-id="${block.id}">
-                                <div class="canvas-block-code-header-left">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
-                                    Python
-                                </div>
-                                <button class="canvas-block-code-copy" data-action="copy-code" data-block-id="${block.id}">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-                                    Copier
-                                </button>
-                            </div>
-                            <pre class="canvas-block-code-content"><code class="language-python">${escapeHtml(def.generateCode(block.config))}</code></pre>
-                        </div>
-                    ` : ''}
                 </div>
         `;
         
@@ -892,6 +783,10 @@ const DashboardEditor = (function() {
     function getBlockSubtitle(block) {
         switch (block.type) {
             case 'title': return block.config.title || 'Sans titre';
+            case 'inputs': {
+                const count = parseDeclaredSignals(block.config.signals).length;
+                return `${block.config.name || 'df'} · ${count} signal(aux) requis`;
+            }
             case 'section': return block.config.title || 'Sans titre';
             case 'text': return (block.config.content || '').substring(0, 40) + (block.config.content?.length > 40 ? '...' : '');
             case 'lineplot': 
@@ -1015,7 +910,7 @@ const DashboardEditor = (function() {
 
     function listSourceNames() {
         const names = flattenTree()
-            .filter(block => block.type === 'synthetic_source')
+            .filter(block => block.type === 'synthetic_source' || block.type === 'inputs')
             .map(block => String(block.config.name || '').trim())
             .filter(Boolean);
         return names.length > 0 ? names : ['df'];
@@ -1023,10 +918,14 @@ const DashboardEditor = (function() {
 
     function listSignalsForSource(sourceName) {
         const source = flattenTree().find(block => {
-            return block.type === 'synthetic_source' && String(block.config.name || '').trim() === sourceName;
+            return (block.type === 'synthetic_source' || block.type === 'inputs')
+                && String(block.config.name || '').trim() === sourceName;
         });
         if (!source) {
             return [];
+        }
+        if (source.type === 'inputs') {
+            return parseDeclaredSignals(source.config.signals);
         }
 
         return parseSignals(source.config.signals)
@@ -1099,8 +998,18 @@ const DashboardEditor = (function() {
         const errors = [];
         const sourceNames = new Set();
 
+        const inputsBlocks = blocks.filter(block => block.type === 'inputs');
+        inputsBlocks.slice(1).forEach(block => {
+            errors.push(`Bloc ${block.id}: une analyse ne peut avoir qu'un seul bloc Entrées.`);
+        });
+        inputsBlocks.forEach(block => {
+            if (parseDeclaredSignals(block.config.signals).length === 0) {
+                errors.push(`Bloc ${block.id}: déclarez au moins un signal requis (un par ligne : nom [unité]).`);
+            }
+        });
+
         blocks.forEach(block => {
-            if (block.type === 'synthetic_source') {
+            if (block.type === 'synthetic_source' || block.type === 'inputs') {
                 const sourceName = String(block.config.name || '').trim();
                 if (!isValidIdentifier(sourceName)) {
                     errors.push(`Bloc ${block.id}: le nom de source doit être un identifiant Python valide.`);
@@ -1110,6 +1019,7 @@ const DashboardEditor = (function() {
                     sourceNames.add(sourceName);
                 }
 
+                if (block.type === 'inputs') return;
                 parseSignals(block.config.signals).forEach((signal, index) => {
                     const signalName = String(signal?.name || '').trim();
                     if (!isValidIdentifier(signalName)) {
@@ -1179,17 +1089,6 @@ const DashboardEditor = (function() {
         }).join('');
         
         outlineContent.innerHTML = outlineItems + `<div class="outline-stats">${sections.length} section(s) • ${totalBlocks} bloc(s)</div>`;
-    }
-
-    function highlightCode() {
-        if (typeof Prism !== 'undefined') {
-            requestAnimationFrame(() => {
-                // Highlight code previews
-                document.querySelectorAll('.canvas-block-code-content code').forEach(block => {
-                    Prism.highlightElement(block);
-                });
-            });
-        }
     }
 
     // Hauteur choisie par l'utilisateur pour chaque editeur de code, conservee
@@ -1290,6 +1189,11 @@ const DashboardEditor = (function() {
         const paletteSearch = document.getElementById('paletteSearch');
         if (paletteSearch) {
             paletteSearch.addEventListener('input', (e) => filterPalette(e.target.value));
+            paletteSearch.addEventListener('keydown', (e) => {
+                if (e.key !== 'Escape' || !paletteSearch.value) return;
+                paletteSearch.value = '';
+                filterPalette('');
+            });
         }
     }
 
@@ -1308,13 +1212,6 @@ const DashboardEditor = (function() {
         switch (actionType) {
             case 'toggle-section':
                 toggleSection(blockId);
-                break;
-            case 'toggle-code':
-                toggleCodePreview(blockId);
-                break;
-            case 'copy-code':
-                e.stopPropagation();
-                copyCode(blockId, action);
                 break;
             case 'move-up':
                 moveBlockUp(blockId);
@@ -1348,7 +1245,11 @@ const DashboardEditor = (function() {
      * 'selected' class in from selectedBlockId, so it survives any full re-render.
      */
     function selectBlock(blockId) {
-        if (!blockId || selectedBlockId === blockId) return;
+        if (!blockId) return;
+        if (selectedBlockId === blockId) {
+            revealBlockCode(blockId);
+            return;
+        }
 
         const previousId = selectedBlockId;
         selectedBlockId = blockId;
@@ -1359,6 +1260,42 @@ const DashboardEditor = (function() {
         }
         const newEl = document.querySelector(`.canvas-block[data-block-id="${blockId}"]`);
         if (newEl) newEl.classList.add('selected');
+        revealBlockCode(blockId);
+    }
+
+    // Surligne, dans le panneau de code, les lignes generees pour le bloc selectionne.
+    // Retourne la position verticale de la premiere plage, ou null si le bloc n'a pas de code.
+    function renderCodeHighlight() {
+        const pre = document.getElementById('editionCodePanelPre');
+        const code = document.getElementById('editionCodePanelCode');
+        if (!pre || !code) return null;
+        pre.querySelectorAll('.code-block-highlight').forEach(el => el.remove());
+        const ranges = (selectedBlockId && blockRanges[selectedBlockId]) || [];
+        if (!ranges.length) return null;
+
+        // Mesure sur le <code> lui-meme (le <pre> est positionne): hauteur reelle des lignes,
+        // y compris quand le code est plus court que le panneau.
+        const lineCount = code.textContent.replace(/\n$/, '').split('\n').length;
+        const lineHeight = code.getBoundingClientRect().height / Math.max(lineCount, 1);
+        const paddingTop = code.offsetTop;
+        ranges.forEach(([first, last]) => {
+            const mark = document.createElement('div');
+            mark.className = 'code-block-highlight';
+            mark.style.top = `${paddingTop + (first - 1) * lineHeight}px`;
+            mark.style.height = `${(last - first + 1) * lineHeight}px`;
+            mark.style.width = `${pre.scrollWidth}px`;
+            pre.appendChild(mark);
+        });
+        return paddingTop + (ranges[0][0] - 1) * lineHeight;
+    }
+
+    // Fait defiler le panneau de code jusqu'au code du bloc.
+    function revealBlockCode(blockId) {
+        if (blockId !== selectedBlockId) return;
+        const top = renderCodeHighlight();
+        const pre = document.getElementById('editionCodePanelPre');
+        if (top === null || !pre) return;
+        pre.scrollTo({ top: Math.max(0, top - 24), behavior: 'smooth' });
     }
 
     function handleConfigChange(e) {
@@ -1375,6 +1312,7 @@ const DashboardEditor = (function() {
 
         const blockId = item.dataset.blockId;
         scrollToBlock(blockId);
+        selectBlock(blockId);
     }
 
     function handleToolbarAction(e) {
@@ -1392,9 +1330,6 @@ const DashboardEditor = (function() {
                 break;
             case 'save-run':
                 saveAndRun();
-                break;
-            case 'generate-report':
-                downloadDashboardReport();
                 break;
             case 'expand-all':
                 setAllCollapsed(false);
@@ -1417,33 +1352,6 @@ const DashboardEditor = (function() {
         }
     }
 
-    function toggleCodePreview(blockId) {
-        const found = findBlockInTree(blockId);
-        if (!found) return;
-
-        found.block.codePreviewExpanded = !found.block.codePreviewExpanded;
-
-        const codeEl = document.querySelector(`.canvas-block-code[data-block-id="${blockId}"]`);
-        if (codeEl) {
-            codeEl.classList.toggle('expanded', found.block.codePreviewExpanded);
-        }
-    }
-
-    function copyCode(blockId, btn) {
-        const found = findBlockInTree(blockId);
-        if (!found) return;
-
-        const def = BLOCK_DEFINITIONS[found.block.type];
-        if (!def) return;
-
-        const code = def.generateCode(found.block.config);
-        navigator.clipboard.writeText(code);
-
-        const originalHTML = btn.innerHTML;
-        btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg> Copié !';
-        setTimeout(() => { btn.innerHTML = originalHTML; }, 1500);
-    }
-
     function updateBlockConfig(blockId, fieldId, value) {
         const found = findBlockInTree(blockId);
         if (!found) return;
@@ -1456,18 +1364,6 @@ const DashboardEditor = (function() {
             }
         }
         markModified();
-
-        // Update code preview
-        const def = BLOCK_DEFINITIONS[found.block.type];
-        if (def && !def.hideCodePreview) {
-            const codeEl = document.querySelector(`.canvas-block-code[data-block-id="${blockId}"] code`);
-            if (codeEl) {
-                codeEl.textContent = def.generateCode(found.block.config);
-                if (typeof Prism !== 'undefined') {
-                    Prism.highlightElement(codeEl);
-                }
-            }
-        }
 
         // Update subtitle
         const subtitleEl = document.querySelector(`.canvas-block[data-block-id="${blockId}"] .canvas-block-subtitle`);
@@ -1492,7 +1388,6 @@ const DashboardEditor = (function() {
             synthSourceRenderTimer = setTimeout(() => {
                 synthSourceRenderTimer = null;
                 render();
-                renderMappings();
             }, 400);
         }
     }
@@ -1666,13 +1561,35 @@ const DashboardEditor = (function() {
         }
     }
 
+    // Texte comparable sans accents ni casse: « donnees » trouve « Données ».
+    function normalizeSearch(value) {
+        return String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
+    }
+
+    // Filtre la palette sur le nom, la description et la categorie de chaque bloc.
+    // Les blocs masques par restrictPaletteToPoc (attribut hidden) restent masques;
+    // une categorie sans bloc visible disparait.
     function filterPalette(searchTerm) {
-        const term = searchTerm.toLowerCase().trim();
-        document.querySelectorAll('.palette-block').forEach(block => {
-            const name = block.querySelector('.palette-block-name')?.textContent.toLowerCase() || '';
-            const desc = block.querySelector('.palette-block-desc')?.textContent.toLowerCase() || '';
-            block.style.display = (name.includes(term) || desc.includes(term) || !term) ? 'flex' : 'none';
+        const term = normalizeSearch(searchTerm);
+        let visibleCount = 0;
+        document.querySelectorAll('.palette-group').forEach(group => {
+            const groupLabel = group.querySelector('.palette-group-title')?.textContent || '';
+            let groupVisible = 0;
+            group.querySelectorAll('.palette-block').forEach(block => {
+                const haystack = normalizeSearch([
+                    block.querySelector('.palette-block-name')?.textContent,
+                    block.querySelector('.palette-block-desc')?.textContent,
+                    groupLabel
+                ].join(' '));
+                const matches = !term || haystack.includes(term);
+                block.classList.toggle('is-filtered-out', !matches);
+                if (matches && !block.hidden) groupVisible += 1;
+            });
+            group.hidden = groupVisible === 0;
+            visibleCount += groupVisible;
         });
+        const empty = document.getElementById('paletteEmpty');
+        if (empty) empty.hidden = visibleCount > 0;
     }
 
     // =========================================================================
@@ -1706,7 +1623,7 @@ const DashboardEditor = (function() {
         isScriptModified = false;
         
         const nameInput = document.getElementById('currentScriptName');
-        if (nameInput) nameInput.value = 'Nouveau Script';
+        if (nameInput) nameInput.value = 'Nouvelle analyse';
         
         updateStatus('Nouveau');
         render();
@@ -1854,11 +1771,18 @@ const DashboardEditor = (function() {
         return saved && currentScriptId ? currentScriptId : null;
     }
 
+    // Toute execution passe par l'onglet Executer: on y choisit les donnees, et le rapport
+    // produit est conserve avec sa provenance.
+    function openRun(scriptId) {
+        if (typeof window.openReportingRun === 'function') {
+            window.openReportingRun({ analysisId: scriptId });
+        }
+    }
+
     async function saveAndRun() {
         const scriptId = await ensurePersistedScriptId();
         if (!scriptId) return;
-        switchPanel('execution');
-        await runScript(scriptId);
+        openRun(scriptId);
     }
 
     function scheduleLivePreviewRefresh() {
@@ -1920,92 +1844,20 @@ const DashboardEditor = (function() {
                 showLivePreviewError(firstError?.message || data.error || 'Compilation refusée.');
                 return;
             }
+            blockRanges = data.block_ranges || {};
             showLivePreviewCode(data.source);
+            renderCodeHighlight();
         } catch (error) {
             if (error.name === 'AbortError') return;
             showLivePreviewError(error.message);
         }
     }
 
-    /**
-     * Compile, execute et telecharge le rapport HTML autonome d'un script deja persiste.
-     * @param {string} scriptId - Identifiant du script.
-     * @param {string} scriptName - Nom affiche, utilise pour le nom de fichier.
-     */
-    async function downloadReport(scriptId, scriptName) {
-        logToConsole('Génération du rapport HTML autonome...', 'info');
-        try {
-            const res = await authFetch(`${SCRIPTS_API}/${scriptId}/report`, { method: 'POST' });
-            if (!res.ok) {
-                const data = await res.json();
-                throw new Error(data.error || 'Export refusé.');
-            }
-            const blob = await res.blob();
-            const objectUrl = URL.createObjectURL(blob);
-            const link = document.createElement('a');
-            link.href = objectUrl;
-            link.download = `${(scriptName || 'rapport').replace(/[^\w-]+/g, '_')}.html`;
-            link.click();
-            URL.revokeObjectURL(objectUrl);
-            logToConsole('Rapport HTML téléchargé.', 'success');
-        } catch (error) {
-            logToConsole(`Erreur d'export: ${error.message}`, 'error');
-        }
-    }
-
-    async function downloadDashboardReport() {
-        const scriptId = await ensurePersistedScriptId();
-        if (!scriptId) return;
-        await downloadReport(scriptId, document.getElementById('currentScriptName')?.value);
-    }
-
-    // =========================================================================
-    // Mapping (kept from original)
-    // =========================================================================
-
-    function addMappingVariable() {
-        signalMappings.push({
-            id: 'mapping_' + (++mappingIdCounter),
-            name: 'NewVariable',
-            aliases: [''],
-            expanded: true
-        });
-        renderMappings();
-    }
-
-    function renderMappings() {
-        const emptyState = document.getElementById('mappingEmpty');
-        const itemsContainer = document.getElementById('mappingItems');
-        const countEl = document.getElementById('mappingCount');
-        
-        if (!emptyState || !itemsContainer) return;
-        const sourceMappings = flattenTree()
-            .filter(block => block.type === 'synthetic_source')
-            .map(block => ({
-                id: block.id,
-                name: block.config.name || '',
-                source: 'synthetic_source',
-                schema: parseSignals(block.config.signals)
-            }));
-        if (countEl) countEl.textContent = `${sourceMappings.length} variable(s)`;
-        
-        if (sourceMappings.length === 0) {
-            emptyState.style.display = 'flex';
-            itemsContainer.style.display = 'none';
-            return;
-        }
-        
-        emptyState.style.display = 'none';
-        itemsContainer.style.display = 'block';
-        itemsContainer.innerHTML = sourceMappings.map(mapping => `
-            <div class="mapping-item" data-block-id="${escapeHtml(mapping.id)}">
-                <div class="mapping-item-main">
-                    <strong>${escapeHtml(mapping.name || 'Variable non configurée')}</strong>
-                    <span>Source synthétique · ${mapping.schema.length} signal(s)</span>
-                </div>
-                <button type="button" class="mapping-item-action" data-mapping-block-id="${escapeHtml(mapping.id)}">Éditer</button>
-            </div>
-        `).join('');
+    // Noms des signaux d'un bloc Entrees: premier mot de chaque ligne (le reste est l'unite).
+    function parseDeclaredSignals(value) {
+        return String(value || '').split(/\r?\n/)
+            .map(line => line.trim().split(/\s+/)[0])
+            .filter(Boolean);
     }
 
     function parseSignals(value) {
@@ -2026,12 +1878,13 @@ const DashboardEditor = (function() {
 
     function restrictPaletteToPoc() {
         const allowed = new Set([
-            'title', 'synthetic_source', 'section', 'text', 'callout',
+            'title', 'inputs', 'section', 'text', 'callout',
             'metrics', 'table', 'lineplot', 'python'
         ]);
         document.querySelectorAll('.palette-block').forEach(block => {
             block.hidden = !allowed.has(block.dataset.blockType);
         });
+        filterPalette(document.getElementById('paletteSearch')?.value || '');
     }
 
     // =========================================================================
@@ -2111,7 +1964,6 @@ const DashboardEditor = (function() {
         setupCodeSplitter();
         restrictPaletteToPoc();
         loadScriptsList();
-        renderMappings();
         
         initialized = true;
         console.log('Dashboard V2: Initialisation terminée');
@@ -2124,26 +1976,20 @@ const DashboardEditor = (function() {
     return {
         init,
         switchPanel,
-        clearConsole,
         newScript,
         saveScript,
         saveScriptAs,
-        downloadDashboardReport,
-        setAllCollapsed,
-        addMappingVariable
+        setAllCollapsed
     };
 
 })();
 
 // Global function aliases for HTML onclick handlers
 function switchDashboardPanel(panel) { DashboardEditor.switchPanel(panel); }
-function clearConsole() { DashboardEditor.clearConsole(); }
 function newScript() { DashboardEditor.newScript(); }
 function saveScript() { DashboardEditor.saveScript(); }
-function downloadDashboardReport() { DashboardEditor.downloadDashboardReport(); }
 function expandAllSections() { DashboardEditor.setAllCollapsed(false); }
 function collapseAllSections() { DashboardEditor.setAllCollapsed(true); }
-function addMappingVariable() { DashboardEditor.addMappingVariable(); }
 function initDashboard() { DashboardEditor.init(); }
 // =========================================================================
 // Expose globals for other modules (Vite compatibility)
@@ -2151,10 +1997,7 @@ function initDashboard() { DashboardEditor.init(); }
 window.DashboardEditor = DashboardEditor;
 window.initDashboard = initDashboard;
 window.switchDashboardPanel = switchDashboardPanel;
-window.clearConsole = clearConsole;
 window.newScript = newScript;
 window.saveScript = saveScript;
-window.downloadDashboardReport = downloadDashboardReport;
 window.expandAllSections = expandAllSections;
 window.collapseAllSections = collapseAllSections;
-window.addMappingVariable = addMappingVariable;

@@ -1,7 +1,7 @@
 {
   "id": "script_analyse_standard",
   "name": "Analyse standard (démo complète)",
-  "description": "Rapport de référence : un exemplaire de chaque type de bloc disponible (titre, source synthétique, section, texte, métriques, callout, courbe, bloc Python figure et table, tableau) sur un essai de roulage synthétique.",
+  "description": "Analyse de démonstration : un exemplaire de chaque type de bloc (titre, entrées, section, texte, métriques, callout, courbe, bloc Python figure et table, tableau). À exécuter sur les données de démo synthétiques depuis l'onglet Exécuter.",
   "created": "2026-09-11T00:00:00Z",
   "modified": "2026-09-11T00:00:00Z",
   "blocks": [
@@ -15,51 +15,11 @@
       }
     },
     {
-      "id": "block_source",
-      "type": "synthetic_source",
+      "id": "block_inputs",
+      "type": "inputs",
       "config": {
         "name": "df",
-        "samples": 3000,
-        "period": 0.02,
-        "seed": 42,
-        "signals": [
-          {
-            "name": "vehicle_speed",
-            "unit": "km/h",
-            "kind": "sine",
-            "amplitude": 45.0,
-            "frequency": 0.02,
-            "offset": 55.0,
-            "noise": 1.2
-          },
-          {
-            "name": "engine_rpm",
-            "unit": "rpm",
-            "kind": "sine",
-            "amplitude": 900.0,
-            "frequency": 0.02,
-            "offset": 2300.0,
-            "noise": 45.0
-          },
-          {
-            "name": "coolant_temp",
-            "unit": "degC",
-            "kind": "ramp",
-            "amplitude": 28.0,
-            "frequency": 0.0,
-            "offset": 62.0,
-            "noise": 0.25
-          },
-          {
-            "name": "brake_pressure",
-            "unit": "bar",
-            "kind": "square",
-            "amplitude": 9.0,
-            "frequency": 0.04,
-            "offset": 9.5,
-            "noise": 0.4
-          }
-        ]
+        "signals": "vehicle_speed km/h\nengine_rpm rpm\ncoolant_temp degC\nbrake_pressure bar"
       }
     },
     {
@@ -74,7 +34,7 @@
       "id": "block_intro",
       "type": "text",
       "config": {
-        "content": "Ce rapport parcourt un essai de roulage de 60 secondes échantillonné à 50 Hz. Les quatre signaux — vitesse véhicule, régime moteur, température du liquide de refroidissement et pression de freinage — proviennent d'une source synthétique déterministe : à graine identique, le rapport est reproductible à l'octet près.\n\nL'objectif est double : vérifier la cohérence du couple vitesse / régime sur l'ensemble du roulage, et confirmer que la montée en température reste dans le gabarit attendu."
+        "content": "Ce rapport parcourt un essai de roulage de 60 secondes échantillonné à 50 Hz. Les quatre signaux — vitesse véhicule, régime moteur, température du liquide de refroidissement et pression de freinage — sont déclarés par le bloc Entrées : les données sont choisies au moment de l'exécution. Sur les données de démo synthétiques, à graine identique, le rapport est reproductible à l'octet près.\n\nL'objectif est double : vérifier la cohérence du couple vitesse / régime sur l'ensemble du roulage, et confirmer que la montée en température reste dans le gabarit attendu."
       }
     },
     {
@@ -91,7 +51,7 @@
       "config": {
         "type": "info",
         "title": "Données synthétiques",
-        "content": "Aucune mesure véhicule réelle n'est utilisée ici : la source est générée dans le module Python compilé, puis exécutée dans le bac à sable. Ce rapport sert de référence fonctionnelle pour tous les types de blocs disponibles."
+        "content": "L'analyse ne contient aucune donnée : elle déclare les signaux dont elle a besoin, et les données sont choisies dans l'onglet Exécuter. Les données de démo sont synthétiques, générées dans le module Python compilé puis exécutées dans le bac à sable. Ce rapport sert de référence fonctionnelle pour tous les types de blocs disponibles."
       }
     },
     {

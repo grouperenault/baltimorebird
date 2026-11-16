@@ -20,9 +20,10 @@ from __future__ import annotations
 
 import ast
 import hashlib
+import re
 import textwrap
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, List, Optional, Sequence, Tuple
 
 from .blocks import (
     BLOCK_REGISTRY,
@@ -33,6 +34,11 @@ from .blocks import (
     sanitise_inline_text,
     validate_block,
 )
+from .inputs import INPUTS_BLOCK_TYPE, DatasetBinding
+
+# Block types that publish a frame in ``state``. They run before every other block.
+SOURCE_BLOCK_TYPES = ("synthetic_source", INPUTS_BLOCK_TYPE)
+
 
 MODULE_RESULT_MARKER = "<<<BB_ARTEFACTS>>>"
 _DECIMATION_MAX_POINTS = 5000
@@ -176,6 +182,8 @@ class CompiledModule:
     source: str
     provenance_hash: str
     result_marker: str = MODULE_RESULT_MARKER
+    # Top-level function name to the recipe block it runs or serves (block function and helpers).
+    block_functions: Dict[str, str] = field(default_factory=dict)
 
 
 @dataclass
@@ -213,10 +221,15 @@ def validate_recipe(recipe: Dict[str, Any]) -> List[Dict[str, str]]:
         block_id = str(block.get("id", "?"))
         for message in validate_block(block):
             errors.append({"block_id": block_id, "message": message})
-        if block.get("type") == "synthetic_source":
+        if block.get("type") in SOURCE_BLOCK_TYPES:
             name = str(block.get("config", {}).get("name", "")).strip()
             if name:
                 source_names[name] = source_names.get(name, 0) + 1
+
+    inputs_blocks = [block for block in blocks if block.get("type") == INPUTS_BLOCK_TYPE]
+    if len(inputs_blocks) > 1:
+        for block in inputs_blocks[1:]:
+            errors.append({"block_id": str(block.get("id", "?")), "message": "only one inputs block per analysis"})
 
     for name, occurrences in source_names.items():
         if occurrences > 1:
@@ -246,11 +259,13 @@ def _build_context(sources: List[Dict[str, Any]], recipe: Dict[str, Any]) -> Emi
     return ctx
 
 
-def compile_recipe(recipe: Dict[str, Any]) -> CompiledModule:
+def compile_recipe(recipe: Dict[str, Any], bindings: Optional[Sequence[DatasetBinding]] = None) -> CompiledModule:
     """Compile a validated recipe into a deterministic Python module.
 
     Args:
         recipe: A recipe document with ``blocks`` and optional ``settings``.
+        bindings: Datasets bound to the inputs block for a run (several for a merged run).
+            None compiles the analysis alone, with placeholder input data.
 
     Returns:
         The :class:`CompiledModule` with source and provenance hash.
@@ -264,9 +279,10 @@ def compile_recipe(recipe: Dict[str, Any]) -> CompiledModule:
         raise ValueError(f"invalid recipe: {summary}")
 
     blocks = _flatten(recipe.get("blocks", []) or [])
-    sources = [block for block in blocks if block.get("type") == "synthetic_source"]
-    consumers = [block for block in blocks if block.get("type") != "synthetic_source"]
+    sources = [block for block in blocks if block.get("type") in SOURCE_BLOCK_TYPES]
+    consumers = [block for block in blocks if block.get("type") not in SOURCE_BLOCK_TYPES]
     ctx = _build_context(sources, recipe)
+    ctx.input_bindings = list(bindings) if bindings else None
 
     helpers: List[str] = []
     seen_helpers: set = set()
@@ -286,7 +302,60 @@ def compile_recipe(recipe: Dict[str, Any]) -> CompiledModule:
     body_source = _assemble_body(helpers, source_blocks + consumer_blocks)
     provenance_hash = hashlib.sha256(body_source.encode("utf-8")).hexdigest()
     header = _render_header(recipe, provenance_hash)
-    return CompiledModule(source=header + body_source, provenance_hash=provenance_hash)
+    return CompiledModule(
+        source=header + body_source,
+        provenance_hash=provenance_hash,
+        block_functions=_block_functions(blocks, source_blocks + consumer_blocks, helpers, ctx),
+    )
+
+
+def _block_functions(blocks: List[Dict[str, Any]], emitted: List["_EmittedBlock"], helpers: List[str],
+                     ctx: EmitContext) -> Dict[str, str]:
+    """Map every generated top-level function to the block it belongs to.
+
+    A block owns its own function, plus the helpers named after its slug (a source block's
+    generator, for instance). Shared helpers belong to no block.
+    """
+    owners = {block.fn_name: block.block_id for block in emitted}
+    slugs = {ctx.slug(str(block["id"])): str(block["id"]) for block in blocks}
+    for helper in helpers:
+        match = _HELPER_NAME.match(helper)
+        if not match:
+            continue
+        name = match.group(1)
+        for slug, block_id in slugs.items():
+            if name.endswith(f"_{slug}") or f"_{slug}_" in name:
+                owners.setdefault(name, block_id)
+                break
+    return owners
+
+
+_HELPER_NAME = re.compile(r"^def (\w+)\(")
+
+
+def block_line_ranges(source: str, block_functions: Dict[str, str]) -> Dict[str, List[List[int]]]:
+    """Locate, in a module source, the lines generated for each recipe block.
+
+    Computed on the final (formatted) source, so the ranges match what the user sees.
+
+    Args:
+        source: Module source as displayed.
+        block_functions: Function name to block id, from :class:`CompiledModule`.
+
+    Returns:
+        Block id to a list of ``[first_line, last_line]`` ranges (1-based, inclusive), in source
+        order. Empty when the source does not parse.
+    """
+    try:
+        tree = ast.parse(source)
+    except SyntaxError:
+        return {}
+    ranges: Dict[str, List[List[int]]] = {}
+    for node in tree.body:
+        if isinstance(node, ast.FunctionDef) and node.name in block_functions:
+            first = min([node.lineno, *(decorator.lineno for decorator in node.decorator_list)])
+            ranges.setdefault(block_functions[node.name], []).append([first, node.end_lineno or node.lineno])
+    return ranges
 
 
 def _collect_helpers(new_helpers: List[str], helpers: List[str], seen: set) -> None:

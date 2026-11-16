@@ -28,6 +28,8 @@ from services.dashboard import (
     validate_recipe,
 )
 from services.dashboard.compiler import MODULE_RESULT_MARKER
+from services.dashboard.datasets import bind, get_dataset, resolve
+from services.dashboard.inputs import parse_declared_signals
 from services.dashboard.formatting import format_module
 from services.dashboard.synthetic import describe_synthetic_source, generate_synthetic_frame
 from services.sandbox import check_code_safety, safe_execute
@@ -412,18 +414,26 @@ def test_default_standard_recipe_covers_every_block_type() -> None:
     """The default report must showcase one instance of every implemented block type."""
     recipe = _load_default_script("script_analyse_standard.json")
     used_types = {block["type"] for block in recipe["blocks"]}
-    assert used_types == set(BLOCK_REGISTRY), f"missing block types: {set(BLOCK_REGISTRY) - used_types}"
+    # The demo analysis takes its data at run time (inputs block). The synthetic source block is
+    # no longer offered in the editor; it stays compilable for recipes saved before.
+    expected = set(BLOCK_REGISTRY) - {"synthetic_source"}
+    assert used_types == expected, f"missing block types: {expected - used_types}"
     assert validate_recipe(recipe) == []
 
 
 def test_default_standard_recipe_exports_standalone_html() -> None:
     recipe = _load_default_script("script_analyse_standard.json")
-    module = compile_recipe(recipe)
+    datasets_dir = Path(__file__).resolve().parents[2] / "data" / "default" / "datasets"
+    dataset = get_dataset(datasets_dir, "demo-synthetique")
+    declared = parse_declared_signals(next(b for b in recipe["blocks"] if b["type"] == "inputs")["config"]["signals"])
+    module = compile_recipe(recipe, [bind(declared, dataset, resolve(declared, dataset))])
     runtime = safe_execute(module.source, timeout_seconds=5, max_memory_mb=256)
     assert runtime.success, runtime.error
     marker_index = runtime.output.rfind(MODULE_RESULT_MARKER)
     assert marker_index != -1, "result marker missing from sandbox output"
     artefacts = json.loads(runtime.output[marker_index + len(MODULE_RESULT_MARKER):])
+    # Every block of the demo succeeds on the demo data.
+    assert [item for item in artefacts["document"] if item.get("kind") in ("error", "skipped")] == []
     provenance = {
         "title": recipe["settings"]["title"],
         "recipe_id": recipe["id"],

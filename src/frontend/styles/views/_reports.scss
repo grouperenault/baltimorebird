@@ -196,7 +196,7 @@
     background: transparent;
     border: none;
     border-radius: 4px;
-    color: $text-darker;
+    color: $text-tertiary;
     cursor: pointer;
     display: flex;
     align-items: center;
@@ -333,9 +333,8 @@
 }
 
 .reports-action-btn.primary {
-    background: linear-gradient(135deg, $color-primary, $color-primary-dark);
+    @include legible-gradient($color-primary, $color-primary-dark);
     border: none;
-    color: $ctp-crust;
 }
 
 .reports-action-btn.primary:hover {
@@ -454,6 +453,15 @@
 
 .reports-delete-modal-actions .delete-btn:hover {
     background: $color-error-dark;
+}
+
+/* Rouge Latte sous texte quasi blanc: 4.1:1, assombri pour depasser 4.5:1. */
+:root[data-theme="light"] .reports-delete-modal-actions .delete-btn {
+    background: color-mix(in srgb, #{$color-error} 75%, black);
+}
+
+:root[data-theme="light"] .reports-delete-modal-actions .delete-btn:hover {
+    background: color-mix(in srgb, #{$color-error} 65%, black);
     filter: brightness(1.05);
 }
 
@@ -470,4 +478,92 @@
         border-right: none;
         border-bottom: 1px solid $border-color;
     }
+}
+/* === Provenance d'un rapport d'execution === */
+.report-item-inputs {
+    font-size: 11px;
+    color: $text-muted;
+    margin: 2px 0 4px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.report-status {
+    display: inline-flex;
+    align-items: center;
+    padding: 1px 6px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 600;
+    border: 1px solid currentColor;
+}
+
+.report-status--ok { color: $ctp-green; }
+.report-status--warn { color: $ctp-yellow; }
+.report-status--error { color: $ctp-red; }
+
+.report-provenance {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 10px 20px;
+    background: $bg-card-alt;
+    border-bottom: 1px solid $border-color;
+    font-size: 12px;
+    color: $text-light;
+    flex-shrink: 0;
+}
+
+.report-prov-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 6px 10px;
+}
+
+.report-prov-label {
+    color: $text-muted;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.report-prov-value {
+    color: $text-light;
+}
+
+.report-provenance code {
+    font-family: $font-mono;
+    font-size: 11px;
+    color: $text-muted;
+}
+
+.report-prov-inputs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 16px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.report-prov-inputs li {
+    display: inline-flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 6px;
+}
+
+.report-prov-input {
+    font-family: $font-mono;
+    color: $text-light;
+}
+
+.report-prov-note {
+    color: $text-muted;
+}
+
+.report-prov-warn {
+    color: $ctp-yellow;
 }

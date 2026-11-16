@@ -6,6 +6,8 @@ from werkzeug.utils import secure_filename
 from api.auth import feature_required, login_required
 from config import REPORTS_DIR
 from core import is_safe_path
+from middleware.security import mark_sandboxed_document
+from services.dashboard.report_store import delete_meta, read_meta
 
 reports_bp = Blueprint("reports", __name__)
 
@@ -19,13 +21,19 @@ def list_reports():
         try:
             stat = f.stat()
             name = f.stem.replace("_", " ").replace("-", " ").title()
-            reports.append({
+            entry = {
                 "id": f.stem,
                 "name": name,
                 "filename": f.name,
                 "size_kb": round(stat.st_size / 1024, 1),
                 "created": stat.st_mtime,
-            })
+            }
+            # Rapport issu d'une execution d'analyse: sa provenance (analyse, donnees, etat).
+            meta = read_meta(REPORTS_DIR, f.stem)
+            if meta:
+                entry["run"] = meta
+                entry["name"] = str(meta.get("analysis", {}).get("name") or name)
+            reports.append(entry)
         except Exception:
             continue
 
@@ -48,7 +56,9 @@ def get_report(report_id: str):
     if not report_path.exists():
         return jsonify({"error": "Rapport introuvable"}), 404
 
-    return send_file(report_path, mimetype="text/html")
+    # Un rapport est du HTML non fiable (televerse ou genere): il ne doit jamais s'executer
+    # dans l'origine de l'application (SEC-16).
+    return mark_sandboxed_document(send_file(report_path, mimetype="text/html"))
 
 
 @reports_bp.route("/api/reports/<report_id>/download")
@@ -87,6 +97,7 @@ def delete_report(report_id: str):
 
     try:
         report_path.unlink()
+        delete_meta(REPORTS_DIR, safe_id)
         return jsonify({"success": True, "message": f"Rapport {safe_id} supprimé"})
     except Exception:
         return jsonify({"error": "Erreur lors de la suppression"}), 500

@@ -106,6 +106,9 @@
        du reste de l'appli. Un seul accent theme-adaptatif ne peut pas servir
        les deux surfaces a la fois. */
     --ctp-color-accent-on-dark: #29ceeb;
+    /* Accent employe comme couleur de texte sur fond clair ou teinte d'accent
+       (pastilles, option active, liens-boutons). Identique a l'accent en sombre. */
+    --ctp-color-accent-text: #29ceeb;
     --ctp-sidebar: #1e1e2e;
     --ctp-item-list: #005B60;
 }
@@ -176,6 +179,8 @@
        --stat-highlight-text ci-dessus pour le teal Latte. */
     --ctp-color-accent: #087891;
     --ctp-color-accent-rgb: 8, 120, 145;
+    /* #087891 tient ~4.1:1 sur son propre fond teinte a 15%: assombri pour >=4.5:1. */
+    --ctp-color-accent-text: #066074;
     --ctp-plot-legend: #f3f5f7;
     --ctp-sidebar: #F0FFFF;
     --ctp-item-list: #e0dede;
@@ -239,6 +244,9 @@ $color-accent-subtle: color-mix(in srgb, var(--ctp-color-accent) 8%, transparent
 // s'assombrit en theme clair pour rester lisible sur fond clair - l'utiliser
 // ici casserait le contraste sur le fond navy de la nav en theme clair.
 $color-accent-on-dark: var(--ctp-color-accent-on-dark);
+
+// Accent utilise comme couleur de TEXTE (pastille, option active, lien-bouton).
+$color-accent-text: var(--ctp-color-accent-text);
 
 // Second rôle d'accent: sapphire, réservé à l'état "actuellement actif/
 // sélectionné" qui persiste dans le temps (toggle allumé, item sélectionné
@@ -863,6 +871,26 @@ $gradient-accent-warm: $gradient-accent;
   
   &:active {
     filter: brightness(0.95);
+  }
+}
+
+/// Bouton plein en degrade, lisible dans les deux themes.
+/// En sombre, les teintes Mocha sont claires et portent un texte $ctp-crust (quasi noir).
+/// En clair, $ctp-crust devient quasi blanc et les teintes Latte sont de luminosite
+/// moyenne (2.5 a 3.9:1): le degrade est assombri pour depasser 4.5:1.
+/// @param {Color} $start - Couleur de depart
+/// @param {Color} $end - Couleur de fin
+/// @param {Number} $light-shade [30%] - Part de noir ajoutee en theme clair
+@mixin legible-gradient($start, $end, $light-shade: 30%) {
+  background: linear-gradient(135deg, $start, $end);
+  color: $ctp-crust;
+
+  :root[data-theme="light"] & {
+    background: linear-gradient(
+      135deg,
+      color-mix(in srgb, #{$start} #{100% - $light-shade}, black),
+      color-mix(in srgb, #{$end} #{100% - $light-shade}, black)
+    );
   }
 }
 
