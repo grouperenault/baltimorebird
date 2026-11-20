@@ -709,11 +709,11 @@ function getValueAtTime(timestamps, values, targetTime, stringMap = null) {
     // Si on a un stringMap, retourner la valeur textuelle
     if (stringMap) {
         const key = Math.round(numericValue);
-        const textValue = stringMap[key] !== undefined ? stringMap[key] : numericValue.toFixed(2);
+        const textValue = stringMap[key] !== undefined ? stringMap[key] : numericValue.toFixed(3);
         return { numeric: numericValue, display: textValue };
     }
     
-    return { numeric: numericValue, display: numericValue.toFixed(2) };
+    return { numeric: numericValue, display: numericValue.toFixed(3) };
 }
 
 // Place un curseur au temps donné selon le cycle: c1 vide -> c1, sinon c2 vide -> c2,
